@@ -1,0 +1,3 @@
+displayName = Board Games
+author = Tyfyter
+version = 0.1
