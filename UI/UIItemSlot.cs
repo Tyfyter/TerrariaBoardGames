@@ -42,7 +42,7 @@ namespace BoardGames.UI {
 			item.SetDefaults(type);
         }
         public override void Update(GameTime gameTime) {
-            if(ParentUI.currentPlayer!=ParentUI.owner) {
+            if(ParentUI.currentPlayer!=ParentUI.owner||ParentUI.gameInactive) {
                 return;
             }
             if(ContainsPoint(Main.MouseScreen)) {
@@ -62,9 +62,9 @@ namespace BoardGames.UI {
 			if (ContainsPoint(Main.MouseScreen) && !PlayerInput.IgnoreMouseInterface) {
 				Main.LocalPlayer.mouseInterface = true;
 			}
-            spriteBatch.Draw(texture, rectangle, glowing?Color.White:Color.LightGray);
+            spriteBatch.Draw(texture, rectangle, ParentUI.gameInactive?Color.Gray:(glowing?Color.White:Color.LightGray));
 			// Draw draws the slot itself and Item. Depending on context, the color will change, as will drawing other things like stack counts.
-			ItemSlot.Draw(spriteBatch, ref item, ItemSlot.Context.MouseItem, rectangle.TopLeft());
+			if(!ParentUI.gameInactive)ItemSlot.Draw(spriteBatch, ref item, ItemSlot.Context.MouseItem, rectangle.TopLeft());
 			Main.inventoryScale = oldScale;
 		}
 	}

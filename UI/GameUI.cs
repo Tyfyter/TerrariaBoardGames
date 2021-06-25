@@ -21,12 +21,15 @@ namespace BoardGames.UI {
         bool oldMouseLeft;
         public bool solitaire;
         public int aiMoveTimeout = 0;
+        public bool local;
+        public bool gameInactive;
         public bool JustClicked => Main.mouseLeft && !oldMouseLeft;
         public override void OnInitialize() {
             Main.UIScaleMatrix.Decompose(out Vector3 scale, out Quaternion ignore, out Vector3 ignore2);
             Vector2 basePosition = new Vector2((float)(Main.screenWidth * 0.05), (float)(Main.screenHeight * 0.4));
             Vector2 slotSize = new Vector2(50 * scale.X, 50 * scale.Y);
-            solitaire = Main.netMode == NetmodeID.SinglePlayer;
+            //solitaire = Main.netMode == NetmodeID.SinglePlayer;
+            local = Main.netMode == NetmodeID.SinglePlayer;
             Init(scale, basePosition, slotSize);
         }
         protected GamePieceItemSlot AddSlot(Item item, Vector2 position, Texture2D texture, bool usePercent = false, float slotScale = 1f, Action<Point> HighlightMoves = null) {
@@ -71,6 +74,8 @@ namespace BoardGames.UI {
         int roll = 0;
         bool rolled = false;
         int[][] allRolls;
+        public int[] remainingPieces;
+        public int[] activePieces;
         int endTurnTimeout = 0;
         static char[,] Grid => new char[8, 2] {
                 {'r','n'},
@@ -108,6 +113,9 @@ namespace BoardGames.UI {
             basePosition = new Vector2((float)(Main.screenWidth * 0.5), (float)(Main.screenHeight * 0.5));
             basePosition -= slotSize * new Vector2(1.5f, 4);
             gamePieces = new GamePieceItemSlot[3,8];
+            remainingPieces = new int[] { 7,7 };
+            activePieces = new int[] { 0,0 };
+            allRolls = new int[4][];
             try {
                 for(int j = 0; j < 8; j++) {
                     for(int i = 0; i < 3; i++) {
@@ -124,6 +132,29 @@ namespace BoardGames.UI {
             }
         }
         public override void Update(GameTime gameTime) {
+            if(gameInactive||remainingPieces[0]==0||remainingPieces[1]==0) {
+                if(!gameInactive) {
+                    if(solitaire) {
+                        if(remainingPieces[0]==0) {
+                            Main.NewText("Player wins", Color.Firebrick);
+                        } else {
+                            Main.NewText("AI wins", Color.DodgerBlue);
+                        }
+                    } else if(local) {
+                        if(remainingPieces[0]==0) {
+                            Main.NewText("Player 1 wins", Color.Firebrick);
+                        } else {
+                            Main.NewText("Player 2 wins", Color.DodgerBlue);
+                        }
+                    } else {
+                        if(remainingPieces[owner]==0) {
+                            Main.NewText(Main.LocalPlayer.name+" wins", Color.Firebrick);
+                        }
+                    }
+                }
+                gameInactive = true;
+                return;
+            }
             if(endTurnTimeout>0) {
                 if(++endTurnTimeout>45) {
                     EndTurn();
@@ -226,6 +257,7 @@ namespace BoardGames.UI {
                     int[] rolls;
                     for(int i = 0; i < 4; i++) {
                         rolls = DieSet[Main.rand.Next(2)].GetRolls(2);
+                        allRolls[i] = rolls;
                         if(rolls[0]==0||rolls[1]==0) {
                             roll++;
                         }
@@ -273,9 +305,15 @@ namespace BoardGames.UI {
                     noAction = false;
                     if(Grid[slotA.Y, slotA.X % 2] == 'o') {
                         gamePieces[slotB.X, slotB.Y].SetItem(GamePieceTypes[currentPlayer]);
+                        activePieces[currentPlayer]++;
                     } else if(Grid[slotB.Y, slotB.X % 2] == 'o') {
                         gamePieces[slotA.X, slotA.Y].SetItem(null);
+                        remainingPieces[currentPlayer]--;
+                        activePieces[currentPlayer]--;
                     } else {
+                        if(gamePieces[slotB.X, slotB.Y].item?.type==GamePieceTypes[currentPlayer^1]) {
+                            activePieces[currentPlayer^1]--;
+                        }
                         gamePieces[slotB.X, slotB.Y].SetItem(gamePieces[slotA.X, slotA.Y].item);
                         gamePieces[slotA.X, slotA.Y].SetItem(null);
                     }
@@ -299,10 +337,11 @@ namespace BoardGames.UI {
                 aiMoveTimeout = 1;
             }
             currentPlayer ^= 1;
+            if(local)owner = currentPlayer;
         }
         public bool CanMoveFrom(Point value) {
             if(Grid[value.Y,value.X%2]=='o') {
-                return true;
+                return remainingPieces[currentPlayer]>activePieces[currentPlayer];
             }
             GamePieceItemSlot slot = gamePieces[value.X,value.Y];
             if(!(slot.item is null)&&slot.item.type==GamePieceTypes[currentPlayer]) {
@@ -372,7 +411,8 @@ namespace BoardGames.UI {
         }
         public override void Draw(SpriteBatch spriteBatch) {
             base.Draw(spriteBatch);
-            Vector2 rollPos = gamePieces[currentPlayer*2,5].GetDimensions().ToRectangle().Center();
+            if(gameInactive) return;
+            Vector2 rollPos = gamePieces[currentPlayer * 2, 5].GetDimensions().ToRectangle().Center();
             var font = Main.fontCombatText[1];
             string text = "roll";
             if(rolled){
@@ -380,6 +420,16 @@ namespace BoardGames.UI {
             }
             rollPos -= font.MeasureString(text)/2;
 			Utils.DrawBorderStringFourWay(spriteBatch, font, text, rollPos.X, rollPos.Y, Color.White, Color.Black, Vector2.Zero, 1);
+            Rectangle pieceSquare = gamePieces[1, 7].GetDimensions().ToRectangle();
+            Vector2 centerPos = pieceSquare.Center();
+            for(int i = remainingPieces[0]; i-->0;)
+                spriteBatch.Draw(Main.itemTexture[GamePieceTypes[0]],
+                    centerPos+new Vector2(pieceSquare.Width*-3, pieceSquare.Height*(remainingPieces[0]-i)*-0.5f),
+                    (i < activePieces[0])?new Color(150,150,150,150):Color.White);
+            for(int i = remainingPieces[1]; i-->0;)
+                spriteBatch.Draw(Main.itemTexture[GamePieceTypes[1]],
+                    centerPos+new Vector2(pieceSquare.Width*3, pieceSquare.Height*(remainingPieces[1]-i)*-0.5f),
+                    (i < activePieces[1])?new Color(150,150,150,150):Color.White);
         }
         public static Texture2D GetTexture(char type) {
             switch(type) {
