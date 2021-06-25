@@ -10,6 +10,7 @@ using Terraria.UI;
 using Terraria.UI.Chat;
 using System;
 using System.Linq;
+using BoardGames.Textures.Pieces;
 
 namespace BoardGames.UI {
 	public abstract class GameUI : UIState {
@@ -18,11 +19,14 @@ namespace BoardGames.UI {
         public GamePieceItemSlot[,] gamePieces;
         public Point? selectedPiece;
         bool oldMouseLeft;
+        public bool solitaire;
+        public int aiMoveTimeout = 0;
         public bool JustClicked => Main.mouseLeft && !oldMouseLeft;
         public override void OnInitialize() {
             Main.UIScaleMatrix.Decompose(out Vector3 scale, out Quaternion ignore, out Vector3 ignore2);
             Vector2 basePosition = new Vector2((float)(Main.screenWidth * 0.05), (float)(Main.screenHeight * 0.4));
             Vector2 slotSize = new Vector2(50 * scale.X, 50 * scale.Y);
+            solitaire = Main.netMode == NetmodeID.SinglePlayer;
             Init(scale, basePosition, slotSize);
         }
         protected GamePieceItemSlot AddSlot(Item item, Vector2 position, Texture2D texture, bool usePercent = false, float slotScale = 1f, Action<Point> HighlightMoves = null) {
@@ -63,7 +67,11 @@ namespace BoardGames.UI {
     public class UrUI : GameUI {
         public override void TryLoadTextures() => LoadTextures();
         public static int[] GamePieceTypes { get; private set; }
+        public static DieSpriteSet[] DieSet { get; private set; }
         int roll = 0;
+        bool rolled = false;
+        int[][] allRolls;
+        int endTurnTimeout = 0;
         static char[,] Grid => new char[8, 2] {
                 {'r','n'},
                 {'n','5'},
@@ -82,12 +90,17 @@ namespace BoardGames.UI {
                 ModContent.ItemType<Textures.Pieces.Red>(),
                 ModContent.ItemType<Textures.Pieces.Blue>()
             };
+            DieSet = new DieSpriteSet[] {
+                new DieSpriteSet("BoardGames/Textures/Pieces/Ur_Die_1", startIndex:1, endIndex:4),
+                new DieSpriteSet("BoardGames/Textures/Pieces/Ur_Die_2", startIndex:1, endIndex:4)
+            };
             BoardGames.UnloadTextures += UnloadTextures;
         }
         public static void UnloadTextures() {
             RosetteTexture = null;
             OtherTextures = null;
             GamePieceTypes = null;
+            DieSet = null;
         }
         public static Texture2D RosetteTexture { get; private set; }
         public static Texture2D[] OtherTextures { get; private set; }
@@ -111,20 +124,82 @@ namespace BoardGames.UI {
             }
         }
         public override void Update(GameTime gameTime) {
-            if(PlayerInput.Triggers.JustPressed.MouseRight) {
-                roll++;
-                if(roll>4) {
-                    roll = 4;
+            if(endTurnTimeout>0) {
+                if(++endTurnTimeout>45) {
+                    EndTurn();
+                    endTurnTimeout = 0;
                 }
-            }else if(PlayerInput.Triggers.JustPressed.MouseMiddle) {
-                roll--;
-                if(roll<0) {
-                    roll = 0;
+            }
+            if(aiMoveTimeout>0) {
+                if(++aiMoveTimeout > 30) {
+                    Point AiMove = new Point();
+                    aiMoveTimeout = 0;
+                    List<Point> allMoves = new List<Point> { };
+                    List<(int priority, Point target)> captureMoves = new List<(int,Point)> { };
+                    Point? offMove = null;
+                    if(!rolled) {
+                        SelectPiece(new Point(2, 5));
+                        if(endTurnTimeout<1)
+                            aiMoveTimeout = 1;
+                    } else {
+                        Point[] move;
+                        Item targetItem;
+                        for(int j = 0; j < 8; j++) {
+                            for(int i = 0; i < 3; i++) {
+                                if((i ^ 2) == (currentPlayer*2)) {
+                                    continue;
+                                }
+                                if(i == 2&&j == 5) {
+                                    move = null;
+                                }
+                                if(CanMoveTo(new Point(i, j))) {
+                                    move = GetMoveTo(new Point(i, j));
+                                    if(move.Length != 0 && CanMoveFrom(move[0])) {
+                                        if(Grid[j, i%2] == 'o') {
+                                            if(Grid[move[0].Y, i%2] != 'o') {
+                                                offMove = move[0];
+                                                allMoves.Add(offMove.Value);
+                                            }
+                                        } else {
+                                            allMoves.Add(new Point(i,j));
+                                            targetItem = gamePieces[i,j].item;
+                                            if(!(targetItem is null)&&!targetItem.IsAir) {
+                                                captureMoves.Add((j, new Point(i,j)));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if(offMove.HasValue) {
+                            AiMove = offMove.Value;
+                        }else if(captureMoves.Count==0) {
+                            AiMove = Main.rand.Next(allMoves);
+                        } else {
+                            captureMoves = captureMoves.OrderBy(v=>v.priority).ToList();
+                            AiMove = captureMoves[0].target;
+                        }
+                        SelectPiece(AiMove);
+                    }
+                    if(endTurnTimeout==0&&aiMoveTimeout==0&&currentPlayer!=0) {
+                        string warning = $"ai attempted invalid move {AiMove} with roll {roll}";
+                        if(offMove.HasValue) {
+                            warning += " believing it would move a piece off the board";
+                        }else if(captureMoves.Count==0) {
+                            warning += " believing it would capture an opponent's piece";
+                        }
+                        BoardGames.Instance.Logger.Warn(warning);
+                        Main.NewText(warning, Color.OrangeRed);
+                        endTurnTimeout = 1;
+                    }
                 }
             }
             base.Update(gameTime);
         }
         public void HighlightMoves(Point target) {
+            if(!rolled||(target.X^2)==(currentPlayer*2)||Grid[target.Y, target.X%2] == 'o') {
+                return;
+            }
             Point[] move;
             if(CanMoveFrom(target)) {
                 move = GetMoveFrom(target);
@@ -141,49 +216,103 @@ namespace BoardGames.UI {
             }
         }
         public override void SelectPiece(Point target) {
-            Point slotA = new Point(-1,-1);
-            Point slotB = new Point(-1,-1);
-            Point[] move = GetMoveFrom(target);
-            if(move.Length>0 && CanMoveFrom(target) && CanMoveTo(move[0])) {
-                slotA = new Point(target.X, target.Y);
-                slotB = new Point(move[0].X, move[0].Y);
-            } else {
-                move = GetMoveTo(target);
-                if(move.Length>0) {
-                    slotA = new Point(move[0].X, move[0].Y);
-                    slotB = new Point(target.X, target.Y);
+            if((target.X^2)==(currentPlayer*2)) {
+                return;
+            }
+            bool noAction = true;
+            if(Grid[target.Y, target.X%2] == 'o') {
+                if(!rolled) {
+                    roll = 0;
+                    int[] rolls;
+                    for(int i = 0; i < 4; i++) {
+                        rolls = DieSet[Main.rand.Next(2)].GetRolls(2);
+                        if(rolls[0]==0||rolls[1]==0) {
+                            roll++;
+                        }
+                    }
+                    if(roll==0) {
+                        endTurnTimeout = 1;
+                    } else {
+                        Point[] move;
+                        int totalMoves = 0;
+                        for(int j = 0; j < 8; j++) {
+                            for(int i = 0; i < 3; i++) {
+                                if(i==(currentPlayer^2)) {
+                                    continue;
+                                }
+                                if(CanMoveFrom(new Point(i,j))) {
+                                    move = GetMoveFrom(new Point(i,j));
+                                    if(move.Length != 0 && CanMoveTo(move[0])) {
+                                        totalMoves++;
+                                    }
+                                }
+                            }
+                        }
+                        if(totalMoves==0) {
+                            endTurnTimeout = 1;
+                        }
+                    }
+                    rolled = true;
+                    noAction = false;
+                }
+            } else if (rolled){
+                Point slotA = new Point(-1,-1);
+                Point slotB = new Point(-1,-1);
+                Point[] move = GetMoveFrom(target);
+                if(move.Length!=0 && CanMoveFrom(target) && CanMoveTo(move[0])) {
+                    slotA = new Point(target.X, target.Y);
+                    slotB = new Point(move[0].X, move[0].Y);
+                } else {
+                    move = GetMoveTo(target);
+                    if(move.Length!=0) {
+                        slotA = new Point(move[0].X, move[0].Y);
+                        slotB = new Point(target.X, target.Y);
+                    }
+                }
+                if(slotA!=new Point(-1,-1) && CanMoveFrom(slotA) && CanMoveTo(slotB)) {
+                    noAction = false;
+                    if(Grid[slotA.Y, slotA.X % 2] == 'o') {
+                        gamePieces[slotB.X, slotB.Y].SetItem(GamePieceTypes[currentPlayer]);
+                    } else if(Grid[slotB.Y, slotB.X % 2] == 'o') {
+                        gamePieces[slotA.X, slotA.Y].SetItem(null);
+                    } else {
+                        gamePieces[slotB.X, slotB.Y].SetItem(gamePieces[slotA.X, slotA.Y].item);
+                        gamePieces[slotA.X, slotA.Y].SetItem(null);
+                    }
+                    if(Grid[slotB.Y, slotB.X % 2] == 'r') {
+                        rolled = false;
+                        if(solitaire&&currentPlayer!=0) {
+                            aiMoveTimeout = 1;
+                        }
+                    } else {
+                        EndTurn();
+                    }
                 }
             }
-            if(slotA!=new Point(-1,-1) && CanMoveFrom(slotA) && CanMoveTo(slotB)) {
-                if(Grid[slotA.Y, slotA.X % 2] == 'o') {
-                    gamePieces[slotB.X, slotB.Y].SetItem(GamePieceTypes[owner]);
-                } else if(Grid[slotB.Y, slotB.X % 2] == 'o') {
-                    gamePieces[slotA.X, slotA.Y].SetItem(null);
-                } else {
-                    gamePieces[slotB.X, slotB.Y].SetItem(gamePieces[slotA.X, slotA.Y].item);
-                    gamePieces[slotA.X, slotA.Y].SetItem(null);
-                }
+            if(noAction&&solitaire&&endTurnTimeout==0&&aiMoveTimeout==0&&currentPlayer!=0) {
+                return;
             }
         }
-        public void ShowMovesTo(Point target) {
-            Point[] move = GetMoveTo(target);
-            if(move.Length>0 && CanMoveFrom(move[0])) {
-                gamePieces[move[0].X, move[0].Y].glowing = true;
+        public void EndTurn() {
+            rolled = false;
+            if(solitaire&&currentPlayer==0) {
+                aiMoveTimeout = 1;
             }
+            currentPlayer ^= 1;
         }
         public bool CanMoveFrom(Point value) {
             if(Grid[value.Y,value.X%2]=='o') {
                 return true;
             }
             GamePieceItemSlot slot = gamePieces[value.X,value.Y];
-            if(!(slot.item is null)&&slot.item.type==GamePieceTypes[owner]) {
+            if(!(slot.item is null)&&slot.item.type==GamePieceTypes[currentPlayer]) {
                 return true;
             }
             return false;
         }
         public bool CanMoveTo(Point value) {
             GamePieceItemSlot slot = gamePieces[value.X,value.Y];
-            if(slot.item is null||slot.item.IsAir||(slot.item.type!=GamePieceTypes[owner]&&Grid[value.Y,value.X%2]!='r')) {
+            if(slot.item is null||slot.item.IsAir||(slot.item.type!=GamePieceTypes[currentPlayer]&&Grid[value.Y,value.X%2]!='r')) {
                 return true;
             }
             return false;
@@ -194,6 +323,8 @@ namespace BoardGames.UI {
                     current = GetNextSquare(current);
                     if(Grid[current.Y, current.X % 2] == 'o' && i > 0) {
                         return new Point[0];
+                    }else if(i == 0 && Grid[current.Y, current.X % 2] == 'r' && gamePieces[current.X,current.Y].item?.type==GamePieceTypes[currentPlayer^1]) {
+                        current = GetNextSquare(current);
                     }
                 }
             } catch(Exception) {
@@ -207,6 +338,8 @@ namespace BoardGames.UI {
                 current = GetLastSquare(current);
                 if(Grid[current.Y,current.X%2]=='o'&&i>0) {
                     return new Point[0];
+                }else if(i == roll && Grid[current.Y, current.X % 2] == 'r' && gamePieces[current.X,current.Y].item?.type==GamePieceTypes[currentPlayer^1]) {
+                    current = GetLastSquare(current);
                 }
             }
             return new Point[]{current};
@@ -216,13 +349,9 @@ namespace BoardGames.UI {
                 return new Point(1,0);
             }
             if(current.Y==7&&current.X==1) {
-                return new Point(owner*2,7);
+                return new Point(currentPlayer*2,7);
             }
             if(current.X==1) {
-                Item targetItem = gamePieces[current.X, current.Y + 1].item;
-                if(!(targetItem is null)&&!targetItem.IsAir&&targetItem.type!=GamePieceTypes[owner]&&Grid[current.Y+1,current.X%2]=='r'){
-                    return new Point(1,current.Y+2);
-                }
                 return new Point(1,current.Y+1);
             } else {
                 return new Point(current.X,current.Y-1);
@@ -230,7 +359,7 @@ namespace BoardGames.UI {
         }
         public Point GetLastSquare(Point current) {
             if(current.Y==0&&current.X==1) {
-                return new Point(owner*2,0);
+                return new Point(currentPlayer*2,0);
             }
             if(current.Y==7&&current.X!=1) {
                 return new Point(1,7);
@@ -240,6 +369,17 @@ namespace BoardGames.UI {
             } else {
                 return new Point(current.X,current.Y+1);
             }
+        }
+        public override void Draw(SpriteBatch spriteBatch) {
+            base.Draw(spriteBatch);
+            Vector2 rollPos = gamePieces[currentPlayer*2,5].GetDimensions().ToRectangle().Center();
+            var font = Main.fontCombatText[1];
+            string text = "roll";
+            if(rolled){
+                text = "" + roll;
+            }
+            rollPos -= font.MeasureString(text)/2;
+			Utils.DrawBorderStringFourWay(spriteBatch, font, text, rollPos.X, rollPos.Y, Color.White, Color.Black, Vector2.Zero, 1);
         }
         public static Texture2D GetTexture(char type) {
             switch(type) {
