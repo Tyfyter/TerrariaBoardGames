@@ -3,9 +3,13 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Terraria;
+using Terraria.ID;
+using Terraria.Localization;
 using Terraria.ModLoader;
 using Terraria.UI;
+using Terraria.Utilities;
 
 namespace BoardGames {
 	public class BoardGames : Mod {
@@ -16,14 +20,14 @@ namespace BoardGames {
 		internal GameUI Game;
         public override void Load() {
             Instance = this;
-			if (!Main.dedServ){
+			if (Main.netMode!=NetmodeID.Server){
                 EmptySlotTexture = ModContent.GetTexture("BoardGames/Textures/Empty");
 				UI = new UserInterface();
 			}
         }
         public override void Unload() {
             EmptySlotTexture = null;
-            UnloadTextures();
+            if(!(UnloadTextures is null))UnloadTextures();
             UnloadTextures = null;
             Instance = null;
         }
@@ -50,6 +54,44 @@ namespace BoardGames {
 				);
 			}
 		}
+        public override void HandlePacket(BinaryReader reader, int whoAmI) {
+            switch(Main.netMode) {
+                case NetmodeID.Server:
+                ModPacket packet;
+                switch(reader.ReadByte()) {
+                    case 0:
+                    packet = Instance.GetPacket(13);
+                    packet.Write((byte)0);
+                    packet.Write(whoAmI);
+                    packet.Write(reader.ReadInt32());
+                    packet.Write(reader.ReadInt32());
+                    packet.Send(reader.ReadInt32());
+                    break;
+                    case 1:
+                    packet = Instance.GetPacket(9);
+                    packet.Write((byte)1);
+                    packet.Write(whoAmI);
+                    packet.Write(reader.ReadInt32());
+                    packet.Send(reader.ReadInt32());
+                    break;
+                }
+                break;
+                case NetmodeID.MultiplayerClient:
+                switch(reader.ReadByte()) {
+                    case 0:
+                    if(reader.ReadInt32() == Game.otherPlayerId) {
+                        Game.SelectPiece(new Point(reader.ReadInt32(), reader.ReadInt32()));
+                    }
+                    break;
+                    case 1:
+                    if(reader.ReadInt32() == Game.otherPlayerId) {
+                        GameUI.rand = new UnifiedRandom(reader.ReadInt32());
+                    }
+                    break;
+                }
+                break;
+            }
+        }
         public static void TestUr() {
             Instance.OpenGame<UrUI>();
         }

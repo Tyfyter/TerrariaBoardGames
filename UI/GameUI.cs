@@ -10,7 +10,9 @@ using Terraria.UI;
 using Terraria.UI.Chat;
 using System;
 using System.Linq;
+using static BoardGames.UI.GameMode;
 using BoardGames.Textures.Pieces;
+using Terraria.Utilities;
 
 namespace BoardGames.UI {
 	public abstract class GameUI : UIState {
@@ -19,17 +21,37 @@ namespace BoardGames.UI {
         public GamePieceItemSlot[,] gamePieces;
         public Point? selectedPiece;
         bool oldMouseLeft;
-        public bool solitaire;
+        public GameMode gameMode;
         public int aiMoveTimeout = 0;
-        public bool local;
         public bool gameInactive;
+        public int otherPlayerId = -1;
+        public static UnifiedRandom rand;
         public bool JustClicked => Main.mouseLeft && !oldMouseLeft;
         public override void OnInitialize() {
             Main.UIScaleMatrix.Decompose(out Vector3 scale, out Quaternion ignore, out Vector3 ignore2);
             Vector2 basePosition = new Vector2((float)(Main.screenWidth * 0.05), (float)(Main.screenHeight * 0.4));
             Vector2 slotSize = new Vector2(50 * scale.X, 50 * scale.Y);
-            //solitaire = Main.netMode == NetmodeID.SinglePlayer;
-            local = Main.netMode == NetmodeID.SinglePlayer;
+            gameMode = ONLINE;
+            if(Main.netMode == NetmodeID.SinglePlayer) {
+                gameMode = LOCAL;
+            }
+            for(int i = 0; i < Main.maxPlayers; i++) {
+                if(i!=Main.myPlayer&&(Main.player[i]?.active??false)) {
+                    otherPlayerId = i;
+                    if(i<Main.myPlayer) {
+                        owner = 1;
+                    }
+                    int seed = Main.rand.Next(int.MinValue, int.MaxValue);
+                    ModPacket packet = BoardGames.Instance.GetPacket(13);
+                    packet.Write((byte)1);
+                    packet.Write(seed);
+                    packet.Write(otherPlayerId);
+                    packet.Send();
+                    rand = new UnifiedRandom(seed);
+                    Main.NewText("connected to "+Main.player[i].name);
+                    break;
+                }
+            }
             Init(scale, basePosition, slotSize);
         }
         protected GamePieceItemSlot AddSlot(Item item, Vector2 position, Texture2D texture, bool usePercent = false, float slotScale = 1f, Action<Point> HighlightMoves = null) {
@@ -66,6 +88,11 @@ namespace BoardGames.UI {
                 selectedPiece = target;
             }
         }
+    }
+    public enum GameMode {
+        AI,
+        LOCAL,
+        ONLINE
     }
     public class UrUI : GameUI {
         public override void TryLoadTextures() => LoadTextures();
@@ -134,22 +161,26 @@ namespace BoardGames.UI {
         public override void Update(GameTime gameTime) {
             if(gameInactive||remainingPieces[0]==0||remainingPieces[1]==0) {
                 if(!gameInactive) {
-                    if(solitaire) {
+                    switch(gameMode) {
+                        case AI:
                         if(remainingPieces[0]==0) {
                             Main.NewText("Player wins", Color.Firebrick);
                         } else {
                             Main.NewText("AI wins", Color.DodgerBlue);
                         }
-                    } else if(local) {
+                        break;
+                        case LOCAL:
                         if(remainingPieces[0]==0) {
                             Main.NewText("Player 1 wins", Color.Firebrick);
                         } else {
                             Main.NewText("Player 2 wins", Color.DodgerBlue);
                         }
-                    } else {
+                        break;
+                        case ONLINE:
                         if(remainingPieces[owner]==0) {
                             Main.NewText(Main.LocalPlayer.name+" wins", Color.Firebrick);
                         }
+                        break;
                     }
                 }
                 gameInactive = true;
@@ -250,13 +281,21 @@ namespace BoardGames.UI {
             if((target.X^2)==(currentPlayer*2)) {
                 return;
             }
+            if(gameMode==ONLINE) {
+                ModPacket packet = BoardGames.Instance.GetPacket(13);
+                packet.Write((byte)0);
+                packet.Write(target.X);
+                packet.Write(target.Y);
+                packet.Write(otherPlayerId);
+                packet.Send();
+            }
             bool noAction = true;
             if(Grid[target.Y, target.X%2] == 'o') {
                 if(!rolled) {
                     roll = 0;
                     int[] rolls;
                     for(int i = 0; i < 4; i++) {
-                        rolls = DieSet[Main.rand.Next(2)].GetRolls(2);
+                        rolls = DieSet[Main.rand.Next(2)].GetRolls(2, random:rand);
                         allRolls[i] = rolls;
                         if(rolls[0]==0||rolls[1]==0) {
                             roll++;
@@ -319,7 +358,7 @@ namespace BoardGames.UI {
                     }
                     if(Grid[slotB.Y, slotB.X % 2] == 'r') {
                         rolled = false;
-                        if(solitaire&&currentPlayer!=0) {
+                        if(gameMode==AI&&currentPlayer!=0) {
                             aiMoveTimeout = 1;
                         }
                     } else {
@@ -327,17 +366,17 @@ namespace BoardGames.UI {
                     }
                 }
             }
-            if(noAction&&solitaire&&endTurnTimeout==0&&aiMoveTimeout==0&&currentPlayer!=0) {
+            if(noAction&&gameMode==AI&&endTurnTimeout==0&&aiMoveTimeout==0&&currentPlayer!=0) {
                 return;
             }
         }
         public void EndTurn() {
             rolled = false;
-            if(solitaire&&currentPlayer==0) {
+            if(gameMode==AI&&currentPlayer==0) {
                 aiMoveTimeout = 1;
             }
             currentPlayer ^= 1;
-            if(local)owner = currentPlayer;
+            if(gameMode==LOCAL)owner = currentPlayer;
         }
         public bool CanMoveFrom(Point value) {
             if(Grid[value.Y,value.X%2]=='o') {
