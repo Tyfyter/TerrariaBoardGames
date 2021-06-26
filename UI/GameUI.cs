@@ -26,6 +26,7 @@ namespace BoardGames.UI {
         public bool gameInactive;
         public int otherPlayerId = -1;
         public static UnifiedRandom rand;
+        public int endGameTimeout = 0;
         public bool JustClicked => Main.mouseLeft && !oldMouseLeft;
         public override void OnInitialize() {
             Main.UIScaleMatrix.Decompose(out Vector3 scale, out Quaternion ignore, out Vector3 ignore2);
@@ -161,6 +162,14 @@ namespace BoardGames.UI {
             }
         }
         public override void Update(GameTime gameTime) {
+            if(endGameTimeout>0){
+                if(--endGameTimeout<1) {
+                    this.Deactivate();
+                    BoardGames.Instance.UI.SetState(null);
+                    endGameTimeout = 0;
+                    return;
+                }
+            }
             if(gameInactive||remainingPieces[0]==0||remainingPieces[1]==0) {
                 if(!gameInactive) {
                     switch(gameMode) {
@@ -179,11 +188,15 @@ namespace BoardGames.UI {
                         }
                         break;
                         case ONLINE:
-                        if(remainingPieces[owner]==0) {
-                            Main.NewText(Main.LocalPlayer.name+" wins", Color.Firebrick);
+                        int notOwner = owner^1;
+                        if(remainingPieces[0]==0) {
+                            Main.NewText(Main.player[(owner*otherPlayerId)+(notOwner*Main.myPlayer)].name+" wins", Color.Firebrick);
+                        } else {
+                            Main.NewText(Main.player[(notOwner*otherPlayerId)+(owner*Main.myPlayer)].name+" wins", Color.DodgerBlue);
                         }
                         break;
                     }
+                    endGameTimeout = 600;
                 }
                 gameInactive = true;
                 return;
