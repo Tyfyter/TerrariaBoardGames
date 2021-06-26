@@ -34,22 +34,24 @@ namespace BoardGames.UI {
             gameMode = ONLINE;
             if(Main.netMode == NetmodeID.SinglePlayer) {
                 gameMode = LOCAL;
-            }
-            for(int i = 0; i < Main.maxPlayers; i++) {
-                if(i!=Main.myPlayer&&(Main.player[i]?.active??false)) {
-                    otherPlayerId = i;
-                    if(i<Main.myPlayer) {
-                        owner = 1;
+            } else {
+                gameInactive = true;
+                for(int i = 0; i < Main.maxPlayers; i++) {
+                    if(i!=Main.myPlayer&&(Main.player[i]?.active??false)) {
+                        otherPlayerId = i;
+                        if(i<Main.myPlayer) {
+                            owner = 1;
+                        }
+                        int seed = Main.rand.Next(int.MinValue, int.MaxValue);
+                        ModPacket packet = BoardGames.Instance.GetPacket(13);
+                        packet.Write((byte)1);
+                        packet.Write(seed);
+                        packet.Write(otherPlayerId);
+                        packet.Send();
+                        rand = new UnifiedRandom(seed);
+                        Main.NewText("connected to "+Main.player[i].name);
+                        break;
                     }
-                    int seed = Main.rand.Next(int.MinValue, int.MaxValue);
-                    ModPacket packet = BoardGames.Instance.GetPacket(13);
-                    packet.Write((byte)1);
-                    packet.Write(seed);
-                    packet.Write(otherPlayerId);
-                    packet.Send();
-                    rand = new UnifiedRandom(seed);
-                    Main.NewText("connected to "+Main.player[i].name);
-                    break;
                 }
             }
             Init(scale, basePosition, slotSize);
@@ -281,7 +283,7 @@ namespace BoardGames.UI {
             if((target.X^2)==(currentPlayer*2)) {
                 return;
             }
-            if(gameMode==ONLINE) {
+            if(gameMode==ONLINE&&currentPlayer==owner) {
                 ModPacket packet = BoardGames.Instance.GetPacket(13);
                 packet.Write((byte)0);
                 packet.Write(target.X);

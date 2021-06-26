@@ -55,24 +55,30 @@ namespace BoardGames {
 			}
 		}
         public override void HandlePacket(BinaryReader reader, int whoAmI) {
+            ModPacket bouncePacket;
             switch(Main.netMode) {
                 case NetmodeID.Server:
-                ModPacket packet;
                 switch(reader.ReadByte()) {
                     case 0:
-                    packet = Instance.GetPacket(13);
-                    packet.Write((byte)0);
-                    packet.Write(whoAmI);
-                    packet.Write(reader.ReadInt32());
-                    packet.Write(reader.ReadInt32());
-                    packet.Send(reader.ReadInt32());
+                    bouncePacket = Instance.GetPacket(13);
+                    bouncePacket.Write((byte)0);
+                    bouncePacket.Write(whoAmI);
+                    bouncePacket.Write(reader.ReadInt32());
+                    bouncePacket.Write(reader.ReadInt32());
+                    bouncePacket.Send(reader.ReadInt32());
                     break;
                     case 1:
-                    packet = Instance.GetPacket(9);
-                    packet.Write((byte)1);
-                    packet.Write(whoAmI);
-                    packet.Write(reader.ReadInt32());
-                    packet.Send(reader.ReadInt32());
+                    bouncePacket = Instance.GetPacket(9);
+                    bouncePacket.Write((byte)1);
+                    bouncePacket.Write(whoAmI);
+                    bouncePacket.Write(reader.ReadInt32());
+                    bouncePacket.Send(reader.ReadInt32());
+                    break;
+                    case 2:
+                    bouncePacket = Instance.GetPacket(5);
+                    bouncePacket.Write((byte)2);
+                    bouncePacket.Write(whoAmI);
+                    bouncePacket.Send(reader.ReadInt32());
                     break;
                 }
                 break;
@@ -86,7 +92,15 @@ namespace BoardGames {
                     case 1:
                     if(reader.ReadInt32() == Game.otherPlayerId) {
                         GameUI.rand = new UnifiedRandom(reader.ReadInt32());
+                        Game.gameInactive = false;
+                        bouncePacket = Instance.GetPacket(5);
+                        bouncePacket.Write((byte)2);
+                        bouncePacket.Write(Game.otherPlayerId);
+                        bouncePacket.Send();
                     }
+                    break;
+                    case 2:
+                    Game.gameInactive = false;
                     break;
                 }
                 break;
