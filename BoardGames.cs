@@ -1,3 +1,4 @@
+using BoardGames.Textures.Chess;
 using BoardGames.UI;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -20,6 +21,7 @@ namespace BoardGames {
 		internal GameUI Game;
         public override void Load() {
             Instance = this;
+            //AddItem("", new Chess_Piece());
 			if (Main.netMode!=NetmodeID.Server){
                 EmptySlotTexture = ModContent.GetTexture("BoardGames/Textures/Empty");
 				UI = new UserInterface();
@@ -107,7 +109,7 @@ namespace BoardGames {
             }
         }
         public static void TestUr() {
-            Instance.OpenGame<UrUI>();
+            Instance.OpenGame<Ur_UI>();
         }
     }
 }

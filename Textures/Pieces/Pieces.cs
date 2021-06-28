@@ -12,7 +12,7 @@ namespace BoardGames.Textures.Pieces {
     public class Black : ModItem {}
     public class Blue : ModItem {
         public override bool OnPickup(Player player) {
-            if(Main.netMode == NetmodeID.MultiplayerClient&&Main.myPlayer==player.whoAmI) {
+            if(Main.myPlayer==player.whoAmI) {
                 BoardGames.TestUr();
             }
             return true;
