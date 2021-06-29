@@ -84,7 +84,7 @@ namespace BoardGames.UI {
                     return;
                 }
             }
-            if(gameInactive||remainingPieces[0]==0||remainingPieces[1]==0) {
+            if(remainingPieces[0]==0||remainingPieces[1]==0) {
                 if(!gameInactive) {
                     switch(gameMode) {
                         case AI:
