@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Terraria;
 using Terraria.Audio;
+using Terraria.Social;
 using static BoardGames.Misc.SoundSetEvent;
 
 namespace BoardGames.Misc {

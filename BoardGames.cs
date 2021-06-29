@@ -11,6 +11,7 @@ using Terraria.ID;
 using Terraria.Localization;
 using Terraria.ModLoader;
 using Terraria.UI;
+using Terraria.UI.Chat;
 using Terraria.Utilities;
 
 namespace BoardGames {
@@ -36,6 +37,9 @@ namespace BoardGames {
                 EmptySlotTexture = ModContent.GetTexture("BoardGames/Textures/Empty");
 				UI = new UserInterface();
 			}
+            ChatManager.Register<GameInviteTagHandler>(new string[]{
+		        "game"
+	        });
         }
         public override void Unload() {
             EmptySlotTexture = null;
@@ -50,6 +54,16 @@ namespace BoardGames {
             Game.TryLoadTextures();
             Game.Activate();
             UI.SetState(Game);
+        }
+        public void OpenGameByName(string name){
+            switch(name) {
+                case "Ur":
+                OpenGame<Ur_UI>();
+                break;
+                case "Chess":
+                OpenGame<Chess_UI>();
+                break;
+            }
         }
 		public override void UpdateUI(GameTime gameTime) {
             if(!(sounds is null)) {
