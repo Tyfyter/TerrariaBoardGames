@@ -97,7 +97,7 @@ namespace BoardGames.UI {
             }
         }
         public virtual Color GetTileColor(bool glowing) {
-            return gameInactive ? Color.Gray : (glowing ? Color.White : Color.LightGray);
+            return gameInactive ? new Color(128,128,128,128) : (glowing ? Color.White : Color.LightGray);
         }
         public virtual void SetupGame() {}
         public static void SyncGame(int other) {

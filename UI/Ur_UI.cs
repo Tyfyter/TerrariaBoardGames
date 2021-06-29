@@ -18,6 +18,7 @@ namespace BoardGames.UI {
         int roll = 0;
         bool rolled = false;
         int[][] allRolls;
+        Vector2[] rollOffsets;
         public int[] remainingPieces;
         public int[] activePieces;
         int endTurnTimeout = 0;
@@ -60,6 +61,9 @@ namespace BoardGames.UI {
             remainingPieces = new int[] { 7,7 };
             activePieces = new int[] { 0,0 };
             allRolls = new int[4][];
+            rollOffsets = new Vector2[4];
+            if(rand is null)
+                rand = new Terraria.Utilities.UnifiedRandom(Main.rand.Next(int.MinValue, int.MaxValue));
             try {
                 for(int j = 0; j < 8; j++) {
                     for(int i = 0; i < 3; i++) {
@@ -110,7 +114,7 @@ namespace BoardGames.UI {
                         }
                         break;
                     }
-                    endGameTimeout = 600;
+                    endGameTimeout = 180;
                 }
                 gameInactive = true;
                 return;
@@ -221,38 +225,7 @@ namespace BoardGames.UI {
             bool noAction = true;
             if(Grid[target.Y, target.X%2] == 'o') {
                 if(!rolled) {
-                    roll = 0;
-                    int[] rolls;
-                    for(int i = 0; i < 4; i++) {
-                        rolls = DieSet[Main.rand.Next(2)].GetRolls(2, random:rand);
-                        allRolls[i] = rolls;
-                        if(rolls[0]==0||rolls[1]==0) {
-                            roll++;
-                        }
-                    }
-                    if(roll==0) {
-                        endTurnTimeout = 1;
-                    } else {
-                        Point[] move;
-                        int totalMoves = 0;
-                        for(int j = 0; j < 8; j++) {
-                            for(int i = 0; i < 3; i++) {
-                                if(i==(currentPlayer^2)) {
-                                    continue;
-                                }
-                                if(CanMoveFrom(new Point(i,j))) {
-                                    move = GetMoveFrom(new Point(i,j));
-                                    if(move.Length != 0 && CanMoveTo(move[0])) {
-                                        totalMoves++;
-                                    }
-                                }
-                            }
-                        }
-                        if(totalMoves==0) {
-                            endTurnTimeout = 1;
-                        }
-                    }
-                    rolled = true;
+                    RollDice();
                     noAction = false;
                 }
             } else if (rolled){
@@ -285,6 +258,7 @@ namespace BoardGames.UI {
                         gamePieces.Index(slotB).SetItem(gamePieces[slotA.X, slotA.Y].item);
                         gamePieces.Index(slotA).SetItem(null);
                     }
+                    Main.PlaySound(new Terraria.Audio.LegacySoundStyle(21, 0, Terraria.Audio.SoundType.Sound), Main.LocalPlayer.MountedCenter).Pitch=1;
                     if(Grid[slotB.Y, slotB.X % 2] == 'r') {
                         rolled = false;
                         if(gameMode==AI&&currentPlayer!=0) {
@@ -306,6 +280,42 @@ namespace BoardGames.UI {
             }
             currentPlayer ^= 1;
             if(gameMode==LOCAL)owner = currentPlayer;
+        }
+        public void RollDice() {
+            roll = 0;
+            int[] rolls;
+            for(int i = 0; i < 4; i++) {
+                int set = Main.rand.Next(2);
+                rolls = DieSet[set].GetRolls(2, random:rand);
+                rollOffsets[i] = new Vector2(rand.NextFloat(-0.6f,0.6f),rand.NextFloat(-0.6f,0.6f));
+                allRolls[i] = new int[] {set, rand.Next(2)}.Concat(rolls).ToArray();
+                if(rolls[0]==0||rolls[1]==0) {
+                    roll++;
+                }
+            }
+            if(roll==0) {
+                endTurnTimeout = 1;
+            } else {
+                Point[] move;
+                int totalMoves = 0;
+                for(int j = 0; j < 8; j++) {
+                    for(int i = 0; i < 3; i++) {
+                        if(i==(currentPlayer^2)) {
+                            continue;
+                        }
+                        if(CanMoveFrom(new Point(i,j))) {
+                            move = GetMoveFrom(new Point(i,j));
+                            if(move.Length != 0 && CanMoveTo(move[0])) {
+                                totalMoves++;
+                            }
+                        }
+                    }
+                }
+                if(totalMoves==0) {
+                    endTurnTimeout = 1;
+                }
+            }
+            rolled = true;
         }
         public bool CanMoveFrom(Point value) {
             if(Grid[value.Y,value.X%2]=='o') {
@@ -398,6 +408,25 @@ namespace BoardGames.UI {
                 spriteBatch.Draw(Main.itemTexture[GamePieceTypes[1]],
                     centerPos+new Vector2(pieceSquare.Width*3, pieceSquare.Height*(remainingPieces[1]-i)*-0.5f),
                     (i < activePieces[1])?new Color(150,150,150,150):Color.White);
+            DieSpriteSet spriteSet;
+            int[] cRoll;
+            Vector2 pos;
+            if(rolled) {
+                for(int i = allRolls.Length; i-- > 0;) {
+                    cRoll = allRolls[i];
+                    if(cRoll is null)
+                        break;
+                    spriteSet = DieSet[cRoll[0]];
+                    pos = centerPos + new Vector2(pieceSquare.Width * -2.5f * (1 - (2 * currentPlayer)), pieceSquare.Height * 0.5f) + (rollOffsets[i] * new Vector2(pieceSquare.Width, pieceSquare.Height));
+                    spriteBatch.Draw(spriteSet.BaseTexture,
+                        pos,
+                        null, Color.White, 0, new Vector2(32, 32), 0.5f, (SpriteEffects)cRoll[1], 0);
+                    for(int i2 = cRoll.Length; i2-- > 2;)
+                        spriteBatch.Draw(spriteSet.LayerTextures[cRoll[i2]],
+                            pos,
+                            null, Color.White, 0, new Vector2(32, 32), 0.5f, (SpriteEffects)cRoll[1], 0);
+                }
+            }
         }
         public static Texture2D GetTexture(char type) {
             switch(type) {

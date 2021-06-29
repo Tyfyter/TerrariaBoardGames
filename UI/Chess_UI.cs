@@ -39,6 +39,9 @@ namespace BoardGames.UI {
             } catch(Exception e) {
                 BoardGames.Instance.Logger.Warn(e);
             }
+            if(gameMode!=ONLINE) {
+                SetupGame();
+            }
         }
         public override void Update(GameTime gameTime) {
             if(endGameTimeout>0){
@@ -89,9 +92,11 @@ namespace BoardGames.UI {
                         targetSlot.SetItem(pieceType);
                         slot.SetItem(null);
                         EndTurn();
+                        //Main.PlaySound(new Terraria.Audio.LegacySoundStyle(21, 0, Terraria.Audio.SoundType.Sound), Main.LocalPlayer.MountedCenter).Pitch = 1;
                     }
                 }
             }
+            Point? oldSelected = selectedPiece;
             base.SelectPiece(target);
             if(selectedPiece.HasValue) {
                 if(SlotEmpty(selectedPiece.Value) ?? true) {
@@ -100,26 +105,29 @@ namespace BoardGames.UI {
                     selectedPiece = null;
                 }
             }
+            if(oldSelected != selectedPiece) {
+                Main.PlaySound(new Terraria.Audio.LegacySoundStyle(21, 0, Terraria.Audio.SoundType.Sound), Main.LocalPlayer.MountedCenter).Pitch = 1;
+            }
         }
         public void EndGame(int winner) {
             switch(gameMode) {
                 case LOCAL:
                 if(winner == 0) {
-                    Main.NewText("White wins", Color.Firebrick);
+                    Main.NewText("White wins", Color.White);
                 } else {
-                    Main.NewText("Black wins", Color.DodgerBlue);
+                    Main.NewText("Black wins", Color.Gray);
                 }
                 break;
                 case ONLINE:
                 int notOwner = owner^1;
                 if(winner==0) {
-                    Main.NewText(Main.player[(owner*otherPlayerId)+(notOwner*Main.myPlayer)].name+" wins", Color.Firebrick);
+                    Main.NewText(Main.player[(owner*otherPlayerId)+(notOwner*Main.myPlayer)].name+" wins", Color.White);
                 } else {
-                    Main.NewText(Main.player[(notOwner*otherPlayerId)+(owner*Main.myPlayer)].name+" wins", Color.DodgerBlue);
+                    Main.NewText(Main.player[(notOwner*otherPlayerId)+(owner*Main.myPlayer)].name+" wins", Color.Gray);
                 }
                 break;
             }
-            endGameTimeout = 600;
+            endGameTimeout = 180;
             gameInactive = true;
         }
         public void EndTurn() {
@@ -143,7 +151,7 @@ namespace BoardGames.UI {
             }
         }
         public override Color GetTileColor(bool glowing) {
-            return gameInactive ? Color.Gray : (glowing ? Color.White : new Color(175, 165, 165));
+            return gameInactive ? new Color(128,128,128,128) : (glowing ? Color.White : new Color(175, 165, 165));
         }
         public override void SetupGame() {
             char[,] pieces = new char[8, 8] {
