@@ -319,7 +319,7 @@ namespace BoardGames.UI {
         }
         public bool CanMoveTo(Point value) {
             GamePieceItemSlot slot = gamePieces.Index(value);
-            if(SlotEmpty(value)||(slot.item.type!=GamePieceTypes[currentPlayer]&&Grid[value.Y,value.X%2]!='r')) {
+            if((SlotEmpty(value)??true)||(slot.item.type!=GamePieceTypes[currentPlayer]&&Grid[value.Y,value.X%2]!='r')) {
                 return true;
             }
             return false;

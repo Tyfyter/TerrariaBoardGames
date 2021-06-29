@@ -18,10 +18,17 @@ namespace BoardGames {
         public static Texture2D EmptySlotTexture { get; private set; }
         public static event Action UnloadTextures;
 		internal UserInterface UI;
-		internal GameUI Game;
+		public GameUI Game;
         public override void Load() {
             Instance = this;
-            //AddItem("", new Chess_Piece());
+            string[] chessPieceNames = Chess_Piece.PieceNames;
+            string pieceName;
+            Chess_Piece.Pieces = new int[12];
+            for(int i = 0; i < 6; i++) {
+                pieceName = chessPieceNames[i];
+                AddItem("White_"+pieceName, new Chess_Piece(Chess_Piece.Moves.FromName(pieceName), true));
+                AddItem("Black_"+pieceName, new Chess_Piece(Chess_Piece.Moves.FromName(pieceName), false));
+            }
 			if (Main.netMode!=NetmodeID.Server){
                 EmptySlotTexture = ModContent.GetTexture("BoardGames/Textures/Empty");
 				UI = new UserInterface();
@@ -32,6 +39,7 @@ namespace BoardGames {
             if(!(UnloadTextures is null))UnloadTextures();
             UnloadTextures = null;
             Instance = null;
+            Chess_Piece.Pieces = null;
         }
         public void OpenGame<GameType>() where GameType : GameUI, new(){
             Game = new GameType();
@@ -94,6 +102,7 @@ namespace BoardGames {
                     case 1:
                     if(reader.ReadInt32() == Game.otherPlayerId) {
                         GameUI.rand = new UnifiedRandom(reader.ReadInt32());
+                        Instance.Game.owner = (Game.otherPlayerId<Main.myPlayer)==GameUI.rand.NextBool()?1:0;
                         Game.gameInactive = false;
                         bouncePacket = Instance.GetPacket(5);
                         bouncePacket.Write((byte)2);
@@ -103,6 +112,7 @@ namespace BoardGames {
                     break;
                     case 2:
                     Game.gameInactive = false;
+                    Game.SetupGame();
                     break;
                 }
                 break;
@@ -110,6 +120,9 @@ namespace BoardGames {
         }
         public static void TestUr() {
             Instance.OpenGame<Ur_UI>();
+        }
+        public static void TestChess() {
+            Instance.OpenGame<Chess_UI>();
         }
     }
 }

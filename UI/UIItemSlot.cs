@@ -62,7 +62,7 @@ namespace BoardGames.UI {
 			if (ContainsPoint(Main.MouseScreen) && !PlayerInput.IgnoreMouseInterface) {
 				Main.LocalPlayer.mouseInterface = true;
 			}
-            spriteBatch.Draw(texture, rectangle, ParentUI.gameInactive?Color.Gray:(glowing?Color.White:Color.LightGray));
+            spriteBatch.Draw(texture, rectangle, ParentUI.GetTileColor(glowing));
 			// Draw draws the slot itself and Item. Depending on context, the color will change, as will drawing other things like stack counts.
 			if(!ParentUI.gameInactive)ItemSlot.Draw(spriteBatch, ref item, ItemSlot.Context.MouseItem, rectangle.TopLeft());
 			Main.inventoryScale = oldScale;

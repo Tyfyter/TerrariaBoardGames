@@ -41,10 +41,10 @@ namespace BoardGames.UI {
                 for(int i = 0; i < Main.maxPlayers; i++) {
                     if(i!=Main.myPlayer&&(Main.player[i]?.active??false)) {
                         otherPlayerId = i;
-                        if(i<Main.myPlayer) {
-                            owner = 1;
-                        }
                         SyncGame(otherPlayerId);
+                        /*if(i<Main.myPlayer) {
+                            owner = 1;
+                        }*/
                         Main.NewText("connected to "+Main.player[i].name);
                         break;
                     }
@@ -71,7 +71,9 @@ namespace BoardGames.UI {
             return SlotEmpty(slot.X, slot.Y);
         }
         public bool? SlotEmpty(int X, int Y) {
-
+            if(X<0||Y<0||X>=gamePieces.GetLength(0)||Y>=gamePieces.GetLength(1)) {
+                return null;
+            }
             return (gamePieces[X,Y]?.item?.IsAir) ?? true;
         }
         public override void Update(GameTime gameTime) {
@@ -94,6 +96,10 @@ namespace BoardGames.UI {
                 selectedPiece = target;
             }
         }
+        public virtual Color GetTileColor(bool glowing) {
+            return gameInactive ? Color.Gray : (glowing ? Color.White : Color.LightGray);
+        }
+        public virtual void SetupGame() {}
         public static void SyncGame(int other) {
             int seed = Main.rand.Next(int.MinValue, int.MaxValue);
             ModPacket packet = BoardGames.Instance.GetPacket(13);
@@ -102,6 +108,7 @@ namespace BoardGames.UI {
             packet.Write(other);
             packet.Send();
             rand = new UnifiedRandom(seed);
+            BoardGames.Instance.Game.owner = (other<Main.myPlayer)==rand.NextBool()?1:0;
         }
     }
     public enum GameMode {
