@@ -1,3 +1,4 @@
+using BoardGames.Misc;
 using BoardGames.Textures.Chess;
 using BoardGames.UI;
 using Microsoft.Xna.Framework;
@@ -19,11 +20,13 @@ namespace BoardGames {
         public static event Action UnloadTextures;
 		internal UserInterface UI;
 		public GameUI Game;
+        internal List<SoundSet> sounds;
         public override void Load() {
             Instance = this;
             string[] chessPieceNames = Chess_Piece.PieceNames;
             string pieceName;
             Chess_Piece.Pieces = new int[12];
+            sounds = new List<SoundSet>{};
             for(int i = 0; i < 6; i++) {
                 pieceName = chessPieceNames[i];
                 AddItem("White_"+pieceName, new Chess_Piece(Chess_Piece.Moves.FromName(pieceName), true));
@@ -38,8 +41,9 @@ namespace BoardGames {
             EmptySlotTexture = null;
             if(!(UnloadTextures is null))UnloadTextures();
             UnloadTextures = null;
-            Instance = null;
             Chess_Piece.Pieces = null;
+            sounds = null;
+            Instance = null;
         }
         public void OpenGame<GameType>() where GameType : GameUI, new(){
             Game = new GameType();
@@ -48,6 +52,14 @@ namespace BoardGames {
             UI.SetState(Game);
         }
 		public override void UpdateUI(GameTime gameTime) {
+            if(!(sounds is null)) {
+                for(int i = 0; i < sounds.Count; i++) {
+                    if(sounds[i].Update()){
+                        sounds.RemoveAt(i);
+                        i--;
+                    }
+                }
+            }
 			UI?.Update(gameTime);
 		}
 		public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers) {

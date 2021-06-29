@@ -9,6 +9,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using BoardGames.Textures.Chess;
 using static BoardGames.UI.GameMode;
+using BoardGames.Misc;
 
 namespace BoardGames.UI {
     public class Chess_UI : GameUI {

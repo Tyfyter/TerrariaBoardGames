@@ -9,6 +9,7 @@ using Microsoft.Xna.Framework;
 using Terraria.ID;
 using BoardGames.UI;
 using System.Text.RegularExpressions;
+using BoardGames.Misc;
 
 namespace BoardGames.Textures.Chess {
     public class Chess_Piece : ModItem {

@@ -9,6 +9,7 @@ using Microsoft.Xna.Framework;
 using static BoardGames.UI.GameMode;
 using BoardGames.Textures.Pieces;
 using Microsoft.Xna.Framework.Graphics;
+using BoardGames.Misc;
 
 namespace BoardGames.UI {
     public class Ur_UI : GameUI {
@@ -292,6 +293,7 @@ namespace BoardGames.UI {
                 if(rolls[0]==0||rolls[1]==0) {
                     roll++;
                 }
+                BoardGames.Instance.sounds.Add(SoundSet.Dice);
             }
             if(roll==0) {
                 endTurnTimeout = 1;
