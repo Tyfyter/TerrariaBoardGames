@@ -16,12 +16,12 @@ namespace BoardGames.Misc {
                 List<(SoundSetEvent, float[])> events = new List<(SoundSetEvent, float[])> { };
                 float force = Main.rand.NextFloat(16, 24);
                 events.Add((PLAY, new float[] {21, 0}));
-                events.Add((DATA, new float[] {1, force/24f}));
+                events.Add((DATA, new float[] {0.5f, force/24f}));
                 while(force>2) {
                     events.Add((WAIT, new float[] {force/2}));
                     events.Add((PLAY, new float[] {21, 0}));
-                    events.Add((DATA, new float[] {1, force/24f}));
-                    force *= Main.rand.NextFloat(0.65f, 1);
+                    events.Add((DATA, new float[] {0.5f, force/24f}));
+                    force *= Main.rand.NextFloat(0.35f, 1);
                 }
                 return new SoundSet(events.ToArray());
             }

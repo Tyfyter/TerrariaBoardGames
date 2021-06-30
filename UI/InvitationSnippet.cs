@@ -22,9 +22,8 @@ namespace BoardGames.UI {
             }
 
             public override void OnClick() {
-                IngameOptions.Close();
                 foreach(ChatLine chatLine in Main.chatLine.Where(line => line.parsedText.Contains(this))) {
-                    chatLine.text = "You have "+(accept?"accepted":"declined")+" a " + game + " invitation from " + Main.player[sender].name;
+                    chatLine.text = "You have "+(accept?"accepted":"declined") + " an invitation to play "+game+" from " + Main.player[sender].name;
                     chatLine.color = accept?Color.Green:Color.Red;
                     chatLine.parsedText = ChatManager.ParseMessage(chatLine.text, chatLine.color).ToArray();
                 }

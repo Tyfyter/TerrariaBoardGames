@@ -33,7 +33,7 @@ namespace BoardGames.UI {
             Main.UIScaleMatrix.Decompose(out Vector3 scale, out Quaternion ignore, out Vector3 ignore2);
             Vector2 basePosition = new Vector2((float)(Main.screenWidth * 0.05), (float)(Main.screenHeight * 0.4));
             Vector2 slotSize = new Vector2(51 * scale.X, 51 * scale.Y);
-            gameMode = ONLINE;
+            /**gameMode = ONLINE;
             if(Main.netMode == NetmodeID.SinglePlayer) {
                 gameMode = LOCAL;
             } else {
@@ -44,14 +44,24 @@ namespace BoardGames.UI {
                         SyncGame(otherPlayerId);
                         /*if(i<Main.myPlayer) {
                             owner = 1;
-                        }*/
+                        }* /
                         Main.NewText("connected to "+Main.player[i].name);
                         break;
                     }
                 }
-            }
+            }*/
             Init(scale, basePosition, slotSize);
         }
+
+        public void SetMode(GameMode gameMode, int otherPlayer) {
+            this.gameMode = gameMode;
+            if(gameMode == ONLINE) {
+                gameInactive = true;
+                otherPlayerId = otherPlayer;
+                SyncGame(otherPlayerId);
+            }
+        }
+
         protected GamePieceItemSlot AddSlot(Item item, Vector2 position, Texture2D texture, bool usePercent = false, float slotScale = 1f, Action<Point> HighlightMoves = null) {
             GamePieceItemSlot itemSlot = new GamePieceItemSlot(texture, slotScale, item) {
                 HighlightMoves = HighlightMoves
@@ -102,8 +112,8 @@ namespace BoardGames.UI {
         public virtual void SetupGame() {}
         public static void SyncGame(int other) {
             int seed = Main.rand.Next(int.MinValue, int.MaxValue);
-            ModPacket packet = BoardGames.Instance.GetPacket(13);
-            packet.Write((byte)1);
+            ModPacket packet = BoardGames.Instance.GetPacket(9);
+            packet.Write(PacketType.StartupSync);
             packet.Write(seed);
             packet.Write(other);
             packet.Send();

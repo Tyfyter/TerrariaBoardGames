@@ -3,13 +3,17 @@ using BoardGames.Textures.Chess;
 using BoardGames.UI;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Steamworks;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using Terraria;
 using Terraria.ID;
 using Terraria.Localization;
 using Terraria.ModLoader;
+using Terraria.ModLoader.IO;
+using Terraria.Net;
 using Terraria.UI;
 using Terraria.UI.Chat;
 using Terraria.Utilities;
@@ -47,21 +51,23 @@ namespace BoardGames {
             UnloadTextures = null;
             Chess_Piece.Pieces = null;
             sounds = null;
+            BoardGamesPlayer.SteamIDs = null;
             Instance = null;
         }
-        public void OpenGame<GameType>() where GameType : GameUI, new(){
+        public void OpenGame<GameType>(GameMode gameMode = GameMode.LOCAL, int otherPlayer = -1) where GameType : GameUI, new(){
             Game = new GameType();
+            Game.SetMode(gameMode, otherPlayer);
             Game.TryLoadTextures();
             Game.Activate();
             UI.SetState(Game);
         }
-        public void OpenGameByName(string name){
-            switch(name) {
-                case "Ur":
-                OpenGame<Ur_UI>();
+        public void OpenGameByName(string name, GameMode gameMode = GameMode.LOCAL, int otherPlayer = -1){
+            switch(name.ToLower()) {
+                case "ur":
+                OpenGame<Ur_UI>(gameMode, otherPlayer);
                 break;
-                case "Chess":
-                OpenGame<Chess_UI>();
+                case "chess":
+                OpenGame<Chess_UI>(gameMode, otherPlayer);
                 break;
             }
         }
@@ -92,57 +98,135 @@ namespace BoardGames {
 		}
         public override void HandlePacket(BinaryReader reader, int whoAmI) {
             ModPacket bouncePacket;
+            byte packetType = reader.ReadByte();
             switch(Main.netMode) {
                 case NetmodeID.Server:
-                switch(reader.ReadByte()) {
-                    case 0:
+                switch(packetType) {
+                    case PacketType.SelectTile:
                     bouncePacket = Instance.GetPacket(13);
-                    bouncePacket.Write((byte)0);
+                    bouncePacket.Write(PacketType.SelectTile);
                     bouncePacket.Write(whoAmI);
                     bouncePacket.Write(reader.ReadInt32());
                     bouncePacket.Write(reader.ReadInt32());
                     bouncePacket.Send(reader.ReadInt32());
                     break;
-                    case 1:
+                    case PacketType.StartupSync:
                     bouncePacket = Instance.GetPacket(9);
-                    bouncePacket.Write((byte)1);
+                    bouncePacket.Write(PacketType.StartupSync);
                     bouncePacket.Write(whoAmI);
                     bouncePacket.Write(reader.ReadInt32());
                     bouncePacket.Send(reader.ReadInt32());
                     break;
-                    case 2:
+                    case PacketType.SyncedSetup:
                     bouncePacket = Instance.GetPacket(5);
-                    bouncePacket.Write((byte)2);
+                    bouncePacket.Write(PacketType.SyncedSetup);
                     bouncePacket.Write(whoAmI);
                     bouncePacket.Send(reader.ReadInt32());
                     break;
+                    case PacketType.RequestSteamID:
+                    bouncePacket = Instance.GetPacket(13);
+                    bouncePacket.Write(PacketType.SendSteamID);
+                    int requestPlayer = reader.ReadInt32();
+                    CSteamID? requestAddress = (Netplay.Clients[requestPlayer].Socket.GetRemoteAddress() as SteamAddress)?.SteamId;
+                    bouncePacket.Write(requestPlayer);
+                    bouncePacket.Write((requestAddress?.m_SteamID)??(ulong)0);
+                    bouncePacket.Send(whoAmI);
+                    break;
+                    /*case PacketType.SendSteamID:
+                    bouncePacket = Instance.GetPacket(13);
+                    bouncePacket.Write(PacketType.SendSteamID);
+                    bouncePacket.Write(whoAmI);
+                    bouncePacket.Write(reader.ReadUInt64());
+                    bouncePacket.Send(reader.ReadInt32());
+                    break;*/
                 }
                 break;
                 case NetmodeID.MultiplayerClient:
-                switch(reader.ReadByte()) {
-                    case 0:
+                switch(packetType) {
+                    case PacketType.SelectTile:
                     if(reader.ReadInt32() == Game.otherPlayerId) {
                         Game.SelectPiece(new Point(reader.ReadInt32(), reader.ReadInt32()));
                     }
                     break;
-                    case 1:
+                    case PacketType.StartupSync:
                     if(reader.ReadInt32() == Game.otherPlayerId) {
                         GameUI.rand = new UnifiedRandom(reader.ReadInt32());
                         Instance.Game.owner = (Game.otherPlayerId<Main.myPlayer)==GameUI.rand.NextBool()?1:0;
                         Game.gameInactive = false;
                         bouncePacket = Instance.GetPacket(5);
-                        bouncePacket.Write((byte)2);
+                        bouncePacket.Write(PacketType.SyncedSetup);
                         bouncePacket.Write(Game.otherPlayerId);
                         bouncePacket.Send();
                     }
                     break;
-                    case 2:
+                    case PacketType.SyncedSetup:
                     Game.gameInactive = false;
                     Game.SetupGame();
+                    break;
+                    case PacketType.StartupRequested:
+                    RecieveGameRequest(reader.ReadInt32(), reader.ReadString());
+                    break;
+                    /*case PacketType.RequestSteamID:
+                    int sender = reader.ReadInt32();
+                    ModPacket packet = BoardGames.Instance.GetPacket(13);
+                    packet.Write(PacketType.RequestSteamID);
+                    packet.Write();
+                    packet.Write(sender);
+                    packet.Send();
+                    break;*/
+                    case PacketType.SendSteamID:
+                    BoardGamesPlayer.SteamIDs[reader.ReadInt32()] = new CSteamID(reader.ReadUInt64());
                     break;
                 }
                 break;
             }
+        }
+        public static void SendGameRequest(int playerID, string gameName) {
+
+        }
+        public static async void RecieveGameRequest(int playerID, string gameName) {
+            CSteamID steamID;
+            EFriendRelationship relationship;
+            try {
+                steamID = await GetSteamID(playerID);
+                relationship = SteamFriends.GetFriendRelationship(steamID);
+            } catch(Exception e) {
+                steamID = CSteamID.Nil;
+                relationship = EFriendRelationship.k_EFriendRelationshipNone;
+            }
+            switch(relationship) {
+                case EFriendRelationship.k_EFriendRelationshipBlocked:
+                if(BoardGamesConfig.Instance.RequestsFrom>=RequestEnum.NotBlocked)return;
+                break;
+                case EFriendRelationship.k_EFriendRelationshipFriend:
+                if(BoardGamesConfig.Instance.RequestsFrom==RequestEnum.NoOne)return;
+                break;
+                default:
+                if(BoardGamesConfig.Instance.RequestsFrom>=RequestEnum.FriendsOnly)return;
+                break;
+            }
+            Main.NewText(Main.player[playerID].name+" has invited you to play "+gameName+". "+GameInviteTagHandler.GenerateTag(true, playerID, gameName)+GameInviteTagHandler.GenerateTag(false, playerID, gameName));
+        }
+        public static async Task<CSteamID> GetSteamID(int playerID) {
+            if(BoardGamesPlayer.SteamIDs[playerID].HasValue) {
+                return BoardGamesPlayer.SteamIDs[playerID].Value;
+            }
+            string playerName = Main.player[playerID].name;
+            int retryCount = 0;
+            ModPacket packet = Instance.GetPacket(5);
+            packet.Write(PacketType.RequestSteamID);
+            packet.Write(playerID);
+            packet.Send();
+            repeat:
+            if(BoardGamesPlayer.SteamIDs[playerID].HasValue) {
+                return BoardGamesPlayer.SteamIDs[playerID].Value;
+            } else if(++retryCount<60) {
+                await Task.Delay(250);
+                goto repeat;
+            }
+            Instance.Logger.Error("Request for "+playerName+"'s Steam ID timed out");
+            BoardGamesPlayer.SteamIDs[playerID] = CSteamID.Nil;
+            return CSteamID.Nil;
         }
         public static void TestUr() {
             Instance.OpenGame<Ur_UI>();
@@ -150,5 +234,19 @@ namespace BoardGames {
         public static void TestChess() {
             Instance.OpenGame<Chess_UI>();
         }
+    }
+    public class BoardGamesPlayer : ModPlayer {
+        public static CSteamID?[] SteamIDs { get; internal set; }
+        public override void Load(TagCompound tag) {
+            SteamIDs = new CSteamID?[Main.maxPlayers+1];
+        }
+    }
+    public static class PacketType {
+        public const byte SelectTile = 0;
+        public const byte StartupSync = 1;
+        public const byte SyncedSetup = 2;
+        public const byte StartupRequested = 3;
+        public const byte RequestSteamID = 10;
+        public const byte SendSteamID = 11;
     }
 }

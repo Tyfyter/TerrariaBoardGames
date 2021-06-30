@@ -62,7 +62,7 @@ namespace BoardGames.UI {
         public override void SelectPiece(Point target) {
             if(gameMode==ONLINE&&currentPlayer==owner) {
                 ModPacket packet = BoardGames.Instance.GetPacket(13);
-                packet.Write((byte)0);
+                packet.Write(PacketType.SelectTile);
                 packet.Write(7-target.X);
                 packet.Write(7-target.Y);
                 packet.Write(otherPlayerId);

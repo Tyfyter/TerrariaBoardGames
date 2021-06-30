@@ -128,66 +128,7 @@ namespace BoardGames.UI {
             }
             if(aiMoveTimeout>0) {
                 if(++aiMoveTimeout > 30) {
-                    Point AiMove = new Point();
-                    aiMoveTimeout = 0;
-                    List<Point> allMoves = new List<Point> { };
-                    List<(int priority, Point target)> captureMoves = new List<(int,Point)> { };
-                    Point? offMove = null;
-                    if(!rolled) {
-                        SelectPiece(new Point(2, 5));
-                        if(endTurnTimeout<1)
-                            aiMoveTimeout = 1;
-                    } else {
-                        Point[] move;
-                        Item targetItem;
-                        for(int j = 0; j < 8; j++) {
-                            for(int i = 0; i < 3; i++) {
-                                if((i ^ 2) == (currentPlayer*2)) {
-                                    continue;
-                                }
-                                if(i == 2&&j == 5) {
-                                    move = null;
-                                }
-                                if(CanMoveTo(new Point(i, j))) {
-                                    move = GetMoveTo(new Point(i, j));
-                                    if(move.Length != 0 && CanMoveFrom(move[0])) {
-                                        if(Grid[j, i%2] == 'o') {
-                                            if(Grid[move[0].Y, i%2] != 'o') {
-                                                offMove = move[0];
-                                                allMoves.Add(offMove.Value);
-                                            }
-                                        } else {
-                                            allMoves.Add(new Point(i,j));
-                                            targetItem = gamePieces[i,j].item;
-                                            if(!(targetItem is null)&&!targetItem.IsAir) {
-                                                captureMoves.Add((j, new Point(i,j)));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        if(offMove.HasValue) {
-                            AiMove = offMove.Value;
-                        }else if(captureMoves.Count==0) {
-                            AiMove = Main.rand.Next(allMoves);
-                        } else {
-                            captureMoves = captureMoves.OrderBy(v=>v.priority).ToList();
-                            AiMove = captureMoves[0].target;
-                        }
-                        SelectPiece(AiMove);
-                    }
-                    if(endTurnTimeout==0&&aiMoveTimeout==0&&currentPlayer!=0) {
-                        string warning = $"ai attempted invalid move {AiMove} with roll {roll}";
-                        if(offMove.HasValue) {
-                            warning += " believing it would move a piece off the board";
-                        }else if(captureMoves.Count==0) {
-                            warning += " believing it would capture an opponent's piece";
-                        }
-                        BoardGames.Instance.Logger.Warn(warning);
-                        Main.NewText(warning, Color.OrangeRed);
-                        endTurnTimeout = 1;
-                    }
+                    AIMove();
                 }
             }
             base.Update(gameTime);
@@ -217,7 +158,7 @@ namespace BoardGames.UI {
             }
             if(gameMode==ONLINE&&currentPlayer==owner) {
                 ModPacket packet = BoardGames.Instance.GetPacket(13);
-                packet.Write((byte)0);
+                packet.Write(PacketType.SelectTile);
                 packet.Write(target.X);
                 packet.Write(target.Y);
                 packet.Write(otherPlayerId);
@@ -318,6 +259,85 @@ namespace BoardGames.UI {
                 }
             }
             rolled = true;
+        }
+        public void AIMove() {
+            Point AiMove = new Point();
+            aiMoveTimeout = 0;
+            List<Point> allMoves = new List<Point> { };
+            List<(int priority, Point target)> captureMoves = new List<(int,Point)> { };
+            List<Point> safetyMoves = new List<Point> { };
+            Point? offMove = null;
+            if(!rolled) {
+                SelectPiece(new Point(2, 5));
+                if(endTurnTimeout<1)
+                    aiMoveTimeout = 1;
+            } else {
+                Point[] move;
+                Item targetItem;
+                for(int j = 0; j < 8; j++) {
+                    for(int i = 0; i < 3; i++) {
+                        if((i ^ 2) == (currentPlayer*2)) {
+                            continue;
+                        }
+                        if(i == 2&&j == 5) {
+                            move = null;
+                        }
+                        if(CanMoveTo(new Point(i, j))) {
+                            move = GetMoveTo(new Point(i, j));
+                            if(move.Length != 0 && CanMoveFrom(move[0])) {
+                                if(Grid[j, i%2] == 'o') {
+                                    if(Grid[move[0].Y, i%2] != 'o') {
+                                        offMove = move[0];
+                                        allMoves.Add(offMove.Value);
+                                    }
+                                } else {
+                                    allMoves.Add(new Point(i,j));
+                                    targetItem = gamePieces[i,j].item;
+                                    if(!(targetItem is null)&&!targetItem.IsAir) {
+                                        captureMoves.Add((j, new Point(i,j)));
+                                    }
+                                    if(move[0].X==1&&i!=1) {
+                                        safetyMoves.Add(new Point(i,j));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if(offMove.HasValue) {
+                    AiMove = offMove.Value;
+                }else if(safetyMoves.Count>0) {
+                    AiMove = Main.rand.Next(safetyMoves);
+                }else if(captureMoves.Count>0) {
+                    captureMoves = captureMoves.OrderBy(v=>v.priority).ToList();
+                    AiMove = captureMoves[0].target;
+                } else if(allMoves.Count>0){
+                    AiMove = Main.rand.Next(allMoves);
+                } else {
+                    for(int j = 0; j < 8; j++) {
+                        for(int i = 0; i < 3; i++) {
+                            AiMove = new Point();
+                            SelectPiece(AiMove);
+                            if(currentPlayer != 1) {
+                                return;
+                            }
+                        }
+                    }
+                    endTurnTimeout = 1;
+                }
+                SelectPiece(AiMove);
+            }
+            if(endTurnTimeout==0&&aiMoveTimeout==0&&currentPlayer!=0) {
+                string warning = $"ai attempted invalid move {AiMove} with roll {roll}";
+                if(offMove.HasValue) {
+                    warning += " believing it would move a piece off the board";
+                }else if(captureMoves.Count==0) {
+                    warning += " believing it would capture an opponent's piece";
+                }
+                BoardGames.Instance.Logger.Warn(warning);
+                Main.NewText(warning, Color.OrangeRed);
+                endTurnTimeout = 1;
+            }
         }
         public bool CanMoveFrom(Point value) {
             if(Grid[value.Y,value.X%2]=='o') {
