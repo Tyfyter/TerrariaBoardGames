@@ -14,6 +14,7 @@ using Terraria.Localization;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
 using Terraria.Net;
+using Terraria.Social;
 using Terraria.UI;
 using Terraria.UI.Chat;
 using Terraria.Utilities;
@@ -61,15 +62,21 @@ namespace BoardGames {
             Game.Activate();
             UI.SetState(Game);
         }
-        public void OpenGameByName(string name, GameMode gameMode = GameMode.LOCAL, int otherPlayer = -1){
+        public static void OpenGameByName(string name, GameMode gameMode = GameMode.LOCAL, int otherPlayer = -1){
             switch(name.ToLower()) {
                 case "ur":
-                OpenGame<Ur_UI>(gameMode, otherPlayer);
+                Instance.OpenGame<Ur_UI>(gameMode, otherPlayer);
                 break;
                 case "chess":
-                OpenGame<Chess_UI>(gameMode, otherPlayer);
+                Instance.OpenGame<Chess_UI>(gameMode, otherPlayer);
                 break;
             }
+        }
+        public static void OpenGameSelector(){
+
+        }
+        public static void OpenPlayerSelector(){
+
         }
 		public override void UpdateUI(GameTime gameTime) {
             if(!(sounds is null)) {
@@ -132,6 +139,20 @@ namespace BoardGames {
                     bouncePacket.Write((requestAddress?.m_SteamID)??(ulong)0);
                     bouncePacket.Send(whoAmI);
                     break;
+                    case PacketType.RecieveRequest:
+                    bouncePacket = Instance.GetPacket();
+                    bouncePacket.Write(PacketType.RecieveRequest);
+                    bouncePacket.Write(whoAmI);
+                    bouncePacket.Write(reader.ReadString());
+                    bouncePacket.Send(reader.ReadInt32());
+                    break;
+                    case PacketType.AcceptRequest:
+                    bouncePacket = Instance.GetPacket();
+                    bouncePacket.Write(PacketType.AcceptRequest);
+                    bouncePacket.Write(whoAmI);
+                    bouncePacket.Write(reader.ReadString());
+                    bouncePacket.Send(reader.ReadInt32());
+                    break;
                     /*case PacketType.SendSteamID:
                     bouncePacket = Instance.GetPacket(13);
                     bouncePacket.Write(PacketType.SendSteamID);
@@ -152,19 +173,26 @@ namespace BoardGames {
                     if(reader.ReadInt32() == Game.otherPlayerId) {
                         GameUI.rand = new UnifiedRandom(reader.ReadInt32());
                         Instance.Game.owner = (Game.otherPlayerId<Main.myPlayer)==GameUI.rand.NextBool()?1:0;
-                        Game.gameInactive = false;
+                        //Game.gameInactive = false;
                         bouncePacket = Instance.GetPacket(5);
                         bouncePacket.Write(PacketType.SyncedSetup);
                         bouncePacket.Write(Game.otherPlayerId);
                         bouncePacket.Send();
+                        goto case PacketType.SyncedSetup;
                     }
                     break;
                     case PacketType.SyncedSetup:
                     Game.gameInactive = false;
                     Game.SetupGame();
                     break;
-                    case PacketType.StartupRequested:
+                    case PacketType.RecieveRequest:
+                    Main.NewText("recieved game invite packet");
                     RecieveGameRequest(reader.ReadInt32(), reader.ReadString());
+                    break;
+                    case PacketType.AcceptRequest:
+                    int otherPlayer = reader.ReadInt32();
+                    string game = reader.ReadString();
+                    BoardGames.OpenGameByName(game, GameMode.ONLINE, otherPlayer);
                     break;
                     /*case PacketType.RequestSteamID:
                     int sender = reader.ReadInt32();
@@ -182,7 +210,13 @@ namespace BoardGames {
             }
         }
         public static void SendGameRequest(int playerID, string gameName) {
-
+            ModPacket packet;
+            packet = Instance.GetPacket();
+            packet.Write(PacketType.RecieveRequest);
+            packet.Write(gameName);
+            packet.Write(playerID);
+            packet.Send();
+            Main.NewText("sent "+gameName+" invite packet to player"+playerID);
         }
         public static async void RecieveGameRequest(int playerID, string gameName) {
             CSteamID steamID;
@@ -190,19 +224,29 @@ namespace BoardGames {
             try {
                 steamID = await GetSteamID(playerID);
                 relationship = SteamFriends.GetFriendRelationship(steamID);
-            } catch(Exception e) {
+            } catch(Exception) {
                 steamID = CSteamID.Nil;
                 relationship = EFriendRelationship.k_EFriendRelationshipNone;
             }
+            Main.NewText("recieved "+gameName+" invite packet from player "+playerID+" who is a "+relationship);
             switch(relationship) {
                 case EFriendRelationship.k_EFriendRelationshipBlocked:
-                if(BoardGamesConfig.Instance.RequestsFrom>=RequestEnum.NotBlocked)return;
+                if(BoardGamesConfig.Instance.RequestsFrom >= RequestEnum.NotBlocked) {
+                    Main.NewText("rejected invitation because player "+playerID+" is blocked");
+                    return;
+                }
                 break;
                 case EFriendRelationship.k_EFriendRelationshipFriend:
-                if(BoardGamesConfig.Instance.RequestsFrom==RequestEnum.NoOne)return;
+                if(BoardGamesConfig.Instance.RequestsFrom == RequestEnum.NoOne) {
+                    Main.NewText("rejected invitation because "+Main.LocalPlayer.name+" is boring");
+                    return;
+                }
                 break;
                 default:
-                if(BoardGamesConfig.Instance.RequestsFrom>=RequestEnum.FriendsOnly)return;
+                if(BoardGamesConfig.Instance.RequestsFrom >= RequestEnum.FriendsOnly) {
+                    Main.NewText("rejected invitation because player "+playerID+" is not a friend");
+                    return;
+                }
                 break;
             }
             Main.NewText(Main.player[playerID].name+" has invited you to play "+gameName+". "+GameInviteTagHandler.GenerateTag(true, playerID, gameName)+GameInviteTagHandler.GenerateTag(false, playerID, gameName));
@@ -237,15 +281,20 @@ namespace BoardGames {
     }
     public class BoardGamesPlayer : ModPlayer {
         public static CSteamID?[] SteamIDs { get; internal set; }
-        public override void Load(TagCompound tag) {
+        public override void OnEnterWorld(Player player) {
             SteamIDs = new CSteamID?[Main.maxPlayers+1];
+            if(!(BoardGames.Instance?.Game is null)) {
+                BoardGames.Instance.Game.Deactivate();
+                BoardGames.Instance.UI.SetState(null);
+            }
         }
     }
     public static class PacketType {
         public const byte SelectTile = 0;
         public const byte StartupSync = 1;
         public const byte SyncedSetup = 2;
-        public const byte StartupRequested = 3;
+        public const byte RecieveRequest = 3;
+        public const byte AcceptRequest = 4;
         public const byte RequestSteamID = 10;
         public const byte SendSteamID = 11;
     }

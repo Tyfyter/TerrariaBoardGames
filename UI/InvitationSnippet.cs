@@ -14,11 +14,13 @@ namespace BoardGames.UI {
             bool accept;
             int sender;
             string game;
+            DateTime timestamp;
             public GameInviteSnippet(bool accept, int sender, string game) : base(accept ? "✓" : "✗", accept ? Color.Green : Color.Red) {
                 this.accept = accept;
                 this.sender = sender;
                 this.game = game;
                 CheckForHover = true;
+                timestamp = DateTime.Now;
             }
 
             public override void OnClick() {
@@ -27,7 +29,24 @@ namespace BoardGames.UI {
                     chatLine.color = accept?Color.Green:Color.Red;
                     chatLine.parsedText = ChatManager.ParseMessage(chatLine.text, chatLine.color).ToArray();
                 }
-
+                if(accept) {
+                    BoardGames.OpenGameByName(game, GameMode.ONLINE, sender);
+                    ModPacket packet;
+                    packet = BoardGames.Instance.GetPacket();
+                    packet.Write(PacketType.AcceptRequest);
+                    packet.Write(game);
+                    packet.Write(sender);
+                    packet.Send();
+                }
+            }
+            public override void OnHover() {
+                if(DateTime.Now>timestamp.AddMinutes(5)) {
+                    foreach(ChatLine chatLine in Main.chatLine.Where(line => line.parsedText.Contains(this))) {
+                        chatLine.text = "invitation timed out";
+                        chatLine.color = Color.Yellow;
+                        chatLine.parsedText = ChatManager.ParseMessage(chatLine.text, chatLine.color).ToArray();
+                    }
+                }
             }
         }
         public TextSnippet Parse(string text, Color baseColor, string options) {

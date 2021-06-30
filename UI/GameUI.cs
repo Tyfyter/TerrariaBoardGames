@@ -119,6 +119,7 @@ namespace BoardGames.UI {
             packet.Send();
             rand = new UnifiedRandom(seed);
             BoardGames.Instance.Game.owner = (other<Main.myPlayer)==rand.NextBool()?1:0;
+            //Game.gameInactive = false;
         }
     }
     public enum GameMode {

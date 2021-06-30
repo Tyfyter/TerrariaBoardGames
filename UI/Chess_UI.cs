@@ -42,6 +42,7 @@ namespace BoardGames.UI {
             }
             if(gameMode!=ONLINE) {
                 SetupGame();
+                Main.NewText("set up chess game because it was not set to online mode");
             }
         }
         public override void Update(GameTime gameTime) {

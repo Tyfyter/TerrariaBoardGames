@@ -16,14 +16,22 @@ namespace BoardGames {
         public override CommandType Type => CommandType.Chat;
 
         public override void Action(CommandCaller caller, string input, string[] args) {
+            if(args.Length == 0) {
+
+                return;
+            }
             string game = args[0].ToLower();
-            string mode = args.Length > 1 ?args[1]:(Main.netMode==NetmodeID.SinglePlayer?"local":"online");
+            if(args.Length < 2){
+
+                return;
+            }
+            string mode = args[1].ToLower();
             switch(mode) {
                 case "local":
-                BoardGames.Instance.OpenGameByName(game, UI.GameMode.LOCAL);
+                BoardGames.OpenGameByName(game, UI.GameMode.LOCAL);
                 break;
                 case "ai":
-                BoardGames.Instance.OpenGameByName(game, UI.GameMode.AI);
+                BoardGames.OpenGameByName(game, UI.GameMode.AI);
                 break;
                 case "online":
                 if(Main.netMode == NetmodeID.SinglePlayer) {
@@ -35,12 +43,36 @@ namespace BoardGames {
                 default:
                 if(Main.netMode == NetmodeID.SinglePlayer) {
                     Main.NewText("Online multiplayer is only available in online multiplayer");
+                    BoardGames.TestGameRequest(game);
                     break;
                 }
-                if(int.TryParse(mode, out int otherID)) {
-
+                int otherID = -1;
+                if(int.TryParse(mode, out otherID)) {
+                    if(otherID==Main.myPlayer) {
+                        Main.NewText("You can't invite yourself to a game");
+                        break;
+                    }
                 } else {
-
+                    mode = mode.ToLower();
+                    otherID = -1;
+                    float dist = float.PositiveInfinity;
+                    float curDist;
+                    for(int i = 0; i <= Main.maxPlayers; i++) {
+                        if(i==Main.myPlayer||!mode.Equals(Main.player[i].name.ToLower())) {
+                            continue;
+                        }
+                        curDist = Main.LocalPlayer.Distance(Main.player[i].Center);
+                        if(curDist < dist) {
+                            dist = curDist;
+                            otherID = i;
+                        }
+                    }
+                }
+                if(otherID != -1) {
+                    BoardGames.SendGameRequest(otherID, game);
+                    Main.NewText($"Sent invitation to {Main.player[otherID].name}");
+                } else {
+                    Main.NewText($"Could not find player \"{mode}\"");
                 }
                 break;
             }
