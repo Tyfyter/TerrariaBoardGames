@@ -1,0 +1,4 @@
+﻿Ur.Name=The royal game of Ur
+Ur.Description=Possibly the oldest board game in the world. \nThis game was rediscovered Sir Leonard Woolley during his excavation of the Royal Cemetery at Ur between 1922 and 1934
+Chess.Name="Unsafe Chess"
+Chess.Description=Like regular chess, but with a few changes to the rules that make it more like actual war (and much simpler to implement)

@@ -26,7 +26,9 @@ namespace BoardGames {
         public static event Action UnloadTextures;
 		internal UserInterface UI;
 		public GameUI Game;
+		public UIState Menu;
         internal List<SoundSet> sounds;
+        public static Dictionary<string, Action<GameMode, int>> ExternalGames { get; private set; }
         public override void Load() {
             Instance = this;
             string[] chessPieceNames = Chess_Piece.PieceNames;
@@ -45,6 +47,7 @@ namespace BoardGames {
             ChatManager.Register<GameInviteTagHandler>(new string[]{
 		        "game"
 	        });
+            ExternalGames = new Dictionary<string, Action<GameMode, int>>{};
         }
         public override void Unload() {
             EmptySlotTexture = null;
@@ -53,6 +56,7 @@ namespace BoardGames {
             Chess_Piece.Pieces = null;
             sounds = null;
             BoardGamesPlayer.SteamIDs = null;
+            ExternalGames = null;
             Instance = null;
         }
         public void OpenGame<GameType>(GameMode gameMode = GameMode.LOCAL, int otherPlayer = -1) where GameType : GameUI, new(){
@@ -66,14 +70,20 @@ namespace BoardGames {
             switch(name.ToLower()) {
                 case "ur":
                 Instance.OpenGame<Ur_UI>(gameMode, otherPlayer);
-                break;
+                return;
                 case "chess":
                 Instance.OpenGame<Chess_UI>(gameMode, otherPlayer);
-                break;
+                return;
+            }
+            if(ExternalGames?.ContainsKey(name)??false) {
+                ExternalGames[name](gameMode, otherPlayer);
             }
         }
         public static void OpenGameSelector(){
-
+            Instance.Menu = new GameSelectorMenu();
+            GameSelectorMenu.LoadTextures();
+            Instance.Menu.Activate();
+            Instance.UI.SetState(Instance.Menu);
         }
         public static void OpenPlayerSelector(){
 
