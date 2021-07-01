@@ -23,12 +23,15 @@ namespace BoardGames {
 	public class BoardGames : Mod {
         public static BoardGames Instance { get; private set; }
         public static Texture2D EmptySlotTexture { get; private set; }
+        public static Texture2D SelectorEndTexture { get; private set; }
+        public static Texture2D SelectorMidTexture { get; private set; }
         public static event Action UnloadTextures;
 		internal UserInterface UI;
 		public GameUI Game;
 		public UIState Menu;
         internal List<SoundSet> sounds;
         public static Dictionary<string, Action<GameMode, int>> ExternalGames { get; private set; }
+        public string selectedGame;
         public override void Load() {
             Instance = this;
             string[] chessPieceNames = Chess_Piece.PieceNames;
@@ -42,6 +45,8 @@ namespace BoardGames {
             }
 			if (Main.netMode!=NetmodeID.Server){
                 EmptySlotTexture = ModContent.GetTexture("BoardGames/Textures/Empty");
+                SelectorEndTexture = ModContent.GetTexture("BoardGames/UI/Selector_Back_End");
+                SelectorMidTexture = ModContent.GetTexture("BoardGames/UI/Selector_Back_Mid");
 				UI = new UserInterface();
 			}
             ChatManager.Register<GameInviteTagHandler>(new string[]{
@@ -51,6 +56,8 @@ namespace BoardGames {
         }
         public override void Unload() {
             EmptySlotTexture = null;
+            SelectorEndTexture = null;
+            SelectorMidTexture = null;
             if(!(UnloadTextures is null))UnloadTextures();
             UnloadTextures = null;
             Chess_Piece.Pieces = null;

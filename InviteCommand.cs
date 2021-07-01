@@ -17,12 +17,12 @@ namespace BoardGames {
 
         public override void Action(CommandCaller caller, string input, string[] args) {
             if(args.Length == 0) {
-
+                BoardGames.OpenGameSelector();
                 return;
             }
             string game = args[0].ToLower();
             if(args.Length < 2){
-
+                BoardGames.Instance.selectedGame = game;
                 return;
             }
             string mode = args[1].ToLower();
@@ -43,7 +43,6 @@ namespace BoardGames {
                 default:
                 if(Main.netMode == NetmodeID.SinglePlayer) {
                     Main.NewText("Online multiplayer is only available in online multiplayer");
-                    BoardGames.TestGameRequest(game);
                     break;
                 }
                 int otherID = -1;

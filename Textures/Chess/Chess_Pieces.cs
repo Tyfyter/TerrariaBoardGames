@@ -28,7 +28,7 @@ namespace BoardGames.Textures.Chess {
         public static int White_King   => Pieces[10];
         public static int Black_King   => Pieces[11];
         public static int[] Pieces { get; internal set; }
-        public bool White  { get; internal set; }
+        public bool White { get; internal set; }
         public Func<GamePieceItemSlot, int, Point[]> GetMoves { get; private set; }
         public override bool Autoload(ref string name) {
             return false;
