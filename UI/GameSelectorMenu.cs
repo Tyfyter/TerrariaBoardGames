@@ -11,6 +11,7 @@ using Terraria.ID;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria.UI.Chat;
 using BoardGames.Misc;
+using Terraria.GameInput;
 
 namespace BoardGames.UI {
     public class GameSelectorMenu : UIState {
@@ -64,13 +65,10 @@ namespace BoardGames.UI {
             Left.Set(Width.Pixels*-0.5f, 0.5f);
             Top.Set(Height.Pixels*-0.5f, 0.5f);
         }
-        /*public override void Update(GameTime gameTime) {
-            base.Update(gameTime);
-            if (ContainsPoint(Main.MouseScreen) && !PlayerInput.IgnoreMouseInterface) {
+        protected override void DrawSelf(SpriteBatch spriteBatch) {
+			if (ContainsPoint(Main.MouseScreen) && !PlayerInput.IgnoreMouseInterface) {
 				Main.LocalPlayer.mouseInterface = true;
 			}
-        }*/
-        protected override void DrawSelf(SpriteBatch spriteBatch) {
             Rectangle dimensions = this.GetDimensions().ToRectangle();
             int endHeight = dimensions.Width / 8;
             Color color = Color.White;

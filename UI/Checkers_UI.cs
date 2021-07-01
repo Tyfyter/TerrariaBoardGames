@@ -10,14 +10,21 @@ using Microsoft.Xna.Framework.Graphics;
 using BoardGames.Textures.Chess;
 using static BoardGames.UI.GameMode;
 using BoardGames.Misc;
-using BoardGames.Textures;
 
 namespace BoardGames.UI {
-    public class Chesslike_UI : GameUI {
+    public class Checkers_UI : GameUI {
         public override void TryLoadTextures() => LoadTextures();
+        public static int[] GamePieceTypes { get; private set; }
         public static Texture2D[] BoardTextures { get; private set; }
         public static void LoadTextures() {
-            BoardTextures = new Texture2D[] { ModContent.GetTexture("BoardGames/Textures/Chess/Tile_White"), ModContent.GetTexture("BoardGames/Textures/Chess/Tile_Black") };
+            BoardTextures = new Texture2D[] {
+                ModContent.GetTexture("BoardGames/Textures/Chess/Tile_White"),
+                ModContent.GetTexture("BoardGames/Textures/Chess/Tile_Black")
+            };
+            GamePieceTypes = new int[] {
+                ModContent.ItemType<Textures.Pieces.Red>(),
+                ModContent.ItemType<Textures.Pieces.Black>()
+            };
             BoardGames.UnloadTextures += UnloadTextures;
         }
         public static void UnloadTextures() {
@@ -72,43 +79,30 @@ namespace BoardGames.UI {
             }
             if(selectedPiece.HasValue) {
                 GamePieceItemSlot slot = gamePieces.Index(selectedPiece.Value);
-                Chesslike_Piece piece = slot?.item?.modItem as Chesslike_Piece;
+                Chess_Piece piece = slot?.item?.modItem as Chess_Piece;
                 if(!(piece is null)) {
                     int pieceType = piece.item.type;
-                    Chesslike_Action[] moves = new Chesslike_Action[0];
+                    Point[] moves = new Point[0];
                     int dir = 0;
                     if(gameMode==ONLINE) {
-                        dir = (owner==1)^piece.PlayerOne?1:-1;
+                        dir = (owner==1)^piece.White?1:-1;
                     } else {
-                        dir = piece.PlayerOne ? 1 : -1;
+                        dir = piece.White ? 1 : -1;
                     }
                     moves = piece.GetMoves(slot, dir);
-                    Chesslike_Action move = null;
-                    Chesslike_Action[] movesToTarget = moves.Where((m)=>m.Move==target).ToArray();
-                    if(movesToTarget.Length>0) {
+                    if(moves.Contains(target)) {
                         selectedPiece = target;
-                        move = movesToTarget[0];
-                    } else {
-                        Chesslike_Action[] movesAttackingTarget = moves.Where((m)=>m.Move==target).ToArray();
-                        if(movesAttackingTarget.Length>0) {
-                            selectedPiece = target;
+                        if((3.5f-(dir*3.5f))==target.Y&&piece.GetMoves==Chess_Piece.Moves.Pawn) {
+                            pieceType = piece.White ? Chess_Piece.White_Queen : Chess_Piece.Black_Queen;
                         }
-                    }
-                    if(!(move is null)) {
-                        GamePieceItemSlot targetSlot = gamePieces.Index(move.Move);
-                        GamePieceItemSlot attackedSlot;
-                        for(int i = 0; i < move.Attacks.Length; i++) {
-                            attackedSlot = gamePieces.Index(move.Attacks[i]);
-                            if(attackedSlot?.item?.modItem is Chesslike_Piece targetPiece && targetPiece.Vital) {
-                                EndGame(currentPlayer);
-                                attackedSlot.SetItem(null);
-                                break;
-                            }
-                            attackedSlot.SetItem(null);
+                        GamePieceItemSlot targetSlot = gamePieces.Index(selectedPiece.Value);
+                        if(targetSlot?.item?.type==Chess_Piece.White_King||targetSlot?.item?.type==Chess_Piece.Black_King) {
+                            EndGame(currentPlayer);
                         }
-                        slot.SetItem(null);
                         targetSlot.SetItem(pieceType);
+                        slot.SetItem(null);
                         EndTurn();
+                        //Main.PlaySound(new Terraria.Audio.LegacySoundStyle(21, 0, Terraria.Audio.SoundType.Sound), Main.LocalPlayer.MountedCenter).Pitch = 1;
                     }
                 }
             }

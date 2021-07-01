@@ -63,8 +63,15 @@ namespace BoardGames.UI {
 				Main.LocalPlayer.mouseInterface = true;
 			}
             spriteBatch.Draw(texture, rectangle, ParentUI.GetTileColor(glowing));
-			// Draw draws the slot itself and Item. Depending on context, the color will change, as will drawing other things like stack counts.
-			if(!ParentUI.gameInactive)ItemSlot.Draw(spriteBatch, ref item, ItemSlot.Context.MouseItem, rectangle.TopLeft());
+            // Draw draws the slot itself and Item. Depending on context, the color will change, as will drawing other things like stack counts.
+            int stack = item.stack;
+            item.stack = 1;
+            Vector2 itemPos = rectangle.TopLeft();
+            if(!ParentUI.gameInactive) {
+                ItemSlot.Draw(spriteBatch, ref item, ItemSlot.Context.MouseItem, itemPos);
+                itemPos.Y -= rectangle.Height*0.1f;
+            }
+            item.stack = stack;
 			Main.inventoryScale = oldScale;
 		}
 	}

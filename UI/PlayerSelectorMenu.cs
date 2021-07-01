@@ -11,9 +11,11 @@ using Terraria.ID;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria.UI.Chat;
 using BoardGames.Misc;
+using Terraria.GameInput;
 
 namespace BoardGames.UI {
     public class PlayerSelectorMenu : UIState {
+        string selectedGame;
         int scroll = 0;
         int[] players;
         const int maxPlayers = 4;
@@ -26,6 +28,7 @@ namespace BoardGames.UI {
         }
         public override void OnInitialize() {
             if(!(Elements is null))Elements.Clear();
+            selectedGame = BoardGames.Instance.selectedGame;
             Main.UIScaleMatrix.Decompose(out Vector3 scale, out Quaternion _, out Vector3 _);
             Height.Set(312f*scale.X, 0);
             Width.Set(208f*scale.X, 0);
@@ -34,7 +37,7 @@ namespace BoardGames.UI {
             players = new int[maxPlayers];
         }
         public override void Update(GameTime gameTime) {
-            players = new int[maxPlayers];
+            players = new int[maxPlayers] {-1,-1,-1,-1};
             int index = 0;
             for(int i = 0; i < Main.maxPlayers; i++) {
                 if(i!=Main.myPlayer&&Main.player[i].active) {
@@ -51,15 +54,23 @@ namespace BoardGames.UI {
             int endHeight = dimensions.Width / 8;
             Rectangle playerRect = new Rectangle(dimensions.X+endHeight/2, dimensions.Y+endHeight/2, slotSize, dimensions.Width-endHeight);
             for(int i = 0; i < maxPlayers; i++) {
+                if(players[i]<0) {
+                    break;
+                }
                 if(playerRect.Contains(Main.mouseX, Main.mouseY)) {
-                    BoardGames.SendGameRequest(players[i], BoardGames.Instance.selectedGame);
+                    BoardGames.SendGameRequest(players[i], selectedGame);
                     Main.NewText($"Sent invitation to {Main.player[players[i]].name}");
+                    BoardGames.Instance.Menu = null;
+                    BoardGames.Instance.UI.SetState(null);
                     break;
                 }
                 playerRect.Y += (int)(slotSize*1.2f);
             }
         }
         protected override void DrawSelf(SpriteBatch spriteBatch) {
+			if (ContainsPoint(Main.MouseScreen) && !PlayerInput.IgnoreMouseInterface) {
+				Main.LocalPlayer.mouseInterface = true;
+			}
             Rectangle dimensions = this.GetDimensions().ToRectangle();
             int endHeight = dimensions.Width / 8;
             Color color = Color.White;
@@ -72,8 +83,12 @@ namespace BoardGames.UI {
             int slotSize = dimensions.Width / 4;
             Rectangle playerRect = new Rectangle(dimensions.X+endHeight/2, dimensions.Y+endHeight/2, slotSize, slotSize);
             for(int i = 0; i < maxPlayers; i++) {
+                if(players[i]<0) {
+                    break;
+                }
                 spriteBatch.Draw(Main.inventoryBackTexture, playerRect, Color.White);
-	            ChatManager.DrawColorCodedStringWithShadow(spriteBatch, Main.fontMouseText, Main.player[i].name, new Vector2(playerRect.X+playerRect.Width*1.2f, playerRect.Y+playerRect.Height*0.2f), Color.White, 0f, Vector2.Zero, Vector2.One);
+                BoardGameExtensions.DrawPlayerHead(spriteBatch, Main.player[players[i]], playerRect.Center.ToVector2(), slotSize/39f);
+	            ChatManager.DrawColorCodedStringWithShadow(spriteBatch, Main.fontMouseText, Main.player[players[i]].name, new Vector2(playerRect.X+playerRect.Width*1.2f, playerRect.Y+playerRect.Height*0.2f), Main.teamColor[Main.player[players[i]].team], 0f, Vector2.Zero, Vector2.One);
                 playerRect.Y += (int)(slotSize*1.2f);
             }
         }

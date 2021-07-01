@@ -93,7 +93,9 @@ namespace BoardGames {
             Instance.UI.SetState(Instance.Menu);
         }
         public static void OpenPlayerSelector(){
-
+            Instance.Menu = new PlayerSelectorMenu();
+            Instance.Menu.Activate();
+            Instance.UI.SetState(Instance.Menu);
         }
 		public override void UpdateUI(GameTime gameTime) {
             if(!(sounds is null)) {
@@ -123,6 +125,7 @@ namespace BoardGames {
         public override void HandlePacket(BinaryReader reader, int whoAmI) {
             ModPacket bouncePacket;
             byte packetType = reader.ReadByte();
+            Logger.Info("recieved packet of type "+packetType);
             switch(Main.netMode) {
                 case NetmodeID.Server:
                 switch(packetType) {
@@ -245,7 +248,7 @@ namespace BoardGames {
                 steamID = CSteamID.Nil;
                 relationship = EFriendRelationship.k_EFriendRelationshipNone;
             }
-            Main.NewText("recieved "+gameName+" invite packet from player "+playerID+" who is a "+relationship);
+            //Main.NewText("recieved "+gameName+" invite packet from player "+playerID+" who is a "+relationship);
             switch(relationship) {
                 case EFriendRelationship.k_EFriendRelationshipBlocked:
                 if(BoardGamesConfig.Instance.RequestsFrom >= RequestEnum.NotBlocked) {
