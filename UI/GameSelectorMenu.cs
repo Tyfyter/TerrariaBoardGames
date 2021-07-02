@@ -12,6 +12,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Terraria.UI.Chat;
 using BoardGames.Misc;
 using Terraria.GameInput;
+using Terraria.Localization;
 
 namespace BoardGames.UI {
     public class GameSelectorMenu : UIState {
@@ -68,10 +69,20 @@ namespace BoardGames.UI {
                 element.OnClick += (ev, el) => this.Deactivate();
                 Append(element);
             }
-            Height.Set(Math.Min(totalHeight, Main.screenHeight*0.9f), 0);
             Width.Set(208f*scale.X, 0);
+            Height.Set(Math.Min(totalHeight+(Width.Pixels / 8), Main.screenHeight*0.9f), 0);
             Left.Set(Width.Pixels*-0.5f, 0.5f);
             Top.Set(Height.Pixels*-0.5f, 0.5f);
+        }
+        public override void Click(UIMouseEvent evt) {
+            Rectangle dimensions = this.GetDimensions().ToRectangle();
+            int endHeight = dimensions.Width / 8;
+            int margin = dimensions.Width / 10;
+            Rectangle buttonRect = new Rectangle(dimensions.X+(margin/2), dimensions.Y+dimensions.Height-(int)(dimensions.Width*0.165f), dimensions.Width-margin, endHeight);
+            if(buttonRect.Contains(Main.mouseX, Main.mouseY)) {
+                BoardGames.Instance.Menu = null;
+                BoardGames.Instance.UI.SetState(null);
+            }
         }
         protected override void DrawSelf(SpriteBatch spriteBatch) {
 			if (ContainsPoint(Main.MouseScreen) && !PlayerInput.IgnoreMouseInterface) {
@@ -79,6 +90,7 @@ namespace BoardGames.UI {
 			}
             Rectangle dimensions = this.GetDimensions().ToRectangle();
             int endHeight = dimensions.Width / 8;
+            int margin = dimensions.Width / 10;
             Color color = Color.White;
             Rectangle topRect = new Rectangle(dimensions.X, dimensions.Y, dimensions.Width, endHeight);
             Rectangle midRect = new Rectangle(dimensions.X, dimensions.Y+endHeight, dimensions.Width, dimensions.Height-(endHeight*2));
@@ -86,6 +98,32 @@ namespace BoardGames.UI {
             spriteBatch.Draw(BoardGames.SelectorEndTexture, topRect, new Rectangle(0,0,208,26), color, 0, default, SpriteEffects.None, 0);
             spriteBatch.Draw(BoardGames.SelectorMidTexture, midRect, new Rectangle(0,0,208,1), color, 0, default, SpriteEffects.None, 0);
             spriteBatch.Draw(BoardGames.SelectorEndTexture, bottomRect, new Rectangle(0,0,208,26), color, 0, default, SpriteEffects.FlipVertically, 0);
+
+            Rectangle labelRect = new Rectangle(dimensions.X, dimensions.Y-(dimensions.Width/10), dimensions.Width, endHeight);
+            string labelText = Language.GetTextValue("Mods.BoardGames.GameSelector");
+            ChatManager.DrawColorCodedStringWithShadow(spriteBatch, Main.fontMouseText, labelText, labelRect.Center.ToVector2(), Color.White, 0f, Main.fontMouseText.MeasureString(labelText)*0.5f, Vector2.One);
+
+            Rectangle buttonRect = new Rectangle(dimensions.X+(margin/2), dimensions.Y+dimensions.Height-(int)(dimensions.Width*0.165f), dimensions.Width-margin, endHeight);
+
+            Rectangle buttonLeftRect = buttonRect;
+            buttonLeftRect.Width = buttonLeftRect.Height / 2;
+
+            Rectangle buttonMidRect = buttonRect;
+            buttonMidRect.X += buttonMidRect.Height / 2;
+            buttonMidRect.Width -= buttonMidRect.Height-1;
+
+            Rectangle buttonBottomRect = buttonRect;
+            buttonBottomRect.X += buttonBottomRect.Width-buttonLeftRect.Width;
+            buttonBottomRect.Width = buttonBottomRect.Height / 2;
+
+            Color buttonColor = buttonRect.Contains(Main.mouseX, Main.mouseY) ? Color.White : Color.LightGray;
+
+            spriteBatch.Draw(BoardGames.ButtonEndTexture, buttonLeftRect, new Rectangle(0,0,26,52), buttonColor, 0, default, SpriteEffects.None, 0);
+            spriteBatch.Draw(BoardGames.ButtonMidTexture, buttonMidRect, new Rectangle(0,0,1,52), buttonColor, 0, default, SpriteEffects.None, 0);
+            spriteBatch.Draw(BoardGames.ButtonEndTexture, buttonBottomRect, new Rectangle(0,0,26,52), buttonColor, 0, default, SpriteEffects.FlipHorizontally, 0);
+
+            string localText = Lang.menu[6].Value;
+            ChatManager.DrawColorCodedStringWithShadow(spriteBatch, Main.fontMouseText, localText, buttonRect.Center.ToVector2()+new Vector2(0,buttonRect.Height*0.15f), buttonColor, 0f, Main.fontMouseText.MeasureString(localText)*0.5f, Vector2.One);
         }
         protected override void DrawChildren(SpriteBatch spriteBatch) {
             base.DrawChildren(spriteBatch);
@@ -113,12 +151,12 @@ namespace BoardGames.UI {
                 Vector2 offset = Vector2.Zero;
                 float scale = 1.2f;
                 for(int i = 0; i < text.Length; i++) {
-                    offset += DrawString(spriteBatch, Terraria.Localization.Language.GetTextValue(text[i]), scale, offset, Main.screenWidth/3f);
+                    offset += DrawString(spriteBatch, Language.GetTextValue(text[i]), scale, offset, Main.screenWidth/3f);
                     scale -= 0.2f;
                 }
             }
         }
-        static Vector2 DrawString(SpriteBatch spriteBatch, string text, float scale = 1f, Vector2 posOffset = default, float maxWidth = float.PositiveInfinity) {
+        protected internal static Vector2 DrawString(SpriteBatch spriteBatch, string text, float scale = 1f, Vector2 posOffset = default, float maxWidth = float.PositiveInfinity) {
 	        int mouseX = Main.mouseX + 10;
 	        int mouseY = Main.mouseY + 10;
 	        if (Main.ThickMouse) {

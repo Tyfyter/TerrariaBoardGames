@@ -26,6 +26,8 @@ namespace BoardGames {
         public static Texture2D SelectorEndTexture { get; private set; }
         public static Texture2D SelectorMidTexture { get; private set; }
         public static Texture2D AIIconTexture { get; private set; }
+        public static Texture2D ButtonEndTexture { get; private set; }
+        public static Texture2D ButtonMidTexture { get; private set; }
         public static event Action UnloadTextures;
 		internal UserInterface UI;
 		public GameUI Game;
@@ -52,6 +54,8 @@ namespace BoardGames {
                 SelectorEndTexture = ModContent.GetTexture("BoardGames/UI/Selector_Back_End");
                 SelectorMidTexture = ModContent.GetTexture("BoardGames/UI/Selector_Back_Mid");
                 AIIconTexture = ModContent.GetTexture("BoardGames/Textures/Icons/AI");
+                ButtonEndTexture = ModContent.GetTexture("BoardGames/UI/Button_Back_End");
+                ButtonMidTexture = ModContent.GetTexture("BoardGames/UI/Button_Back_Mid");
 				UI = new UserInterface();
 			}
             ChatManager.Register<GameInviteTagHandler>(new string[]{
@@ -67,6 +71,8 @@ namespace BoardGames {
             SelectorEndTexture = null;
             SelectorMidTexture = null;
             AIIconTexture = null;
+            ButtonEndTexture = null;
+            ButtonMidTexture = null;
             if(!(UnloadTextures is null))UnloadTextures();
             UnloadTextures = null;
             Chess_Piece.Pieces = null;
