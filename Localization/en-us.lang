@@ -1,11 +1,10 @@
 ﻿
 Local=Local
-Cancel=Cancel
 GameSelector=Select Game
 PlayerSelector=Select Opponent
 
 Ur.Name=The royal game of Ur
-Ur.Description=Possibly the oldest board game in the world. <SP>This game was rediscovered Sir Leonard Woolley <SP>during his excavation of the Royal Cemetery at Ur <SP>between 1922 and 1934
+Ur.Description=Possibly the oldest board game in the world. <SP>This game was rediscovered by Sir Leonard Woolley <SP>during his excavation of the Royal Cemetery at Ur <SP>between 1922 and 1934
 
 Chess.Name="Unsafe Chess"
 Chess.Description=Like regular chess, <SP>but with a few changes to the rules <SP>that make it more like actual war (and much simpler to implement)

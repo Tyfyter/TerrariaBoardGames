@@ -50,7 +50,7 @@ namespace BoardGames.UI {
             int index = 0;
             int scrolled = scroll;
             for(int i = 0; i < Main.maxPlayers; i++) {
-                if(Main.player[i].active) {
+                if(i!=Main.myPlayer&&Main.player[i].active) {
                     if(scrolled==0) {
                         if(index<maxPlayers)players[index] = i;
                         index++;

@@ -151,7 +151,7 @@ namespace BoardGames.UI {
                 Vector2 offset = Vector2.Zero;
                 float scale = 1.2f;
                 for(int i = 0; i < text.Length; i++) {
-                    offset += DrawString(spriteBatch, Language.GetTextValue(text[i]), scale, offset, Main.screenWidth/3f);
+                    offset += DrawString(spriteBatch, Language.GetTextValue(text[i]), scale, offset, Main.screenWidth/2f);
                     scale -= 0.2f;
                 }
             }
@@ -167,7 +167,7 @@ namespace BoardGames.UI {
             textSize = Main.fontMouseText.MeasureString(text)*scale;
             string lastText = "";
             while(textSize.X>maxWidth) {
-                text = text.ReplaceLast("<SP>", "\n");
+                text = text.ReplaceMiddle("<SP>", "\n");
                 textSize = Main.fontMouseText.MeasureString(text)*scale;
                 if(text.Equals(lastText)) {
                     break;

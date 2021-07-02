@@ -24,6 +24,23 @@ namespace BoardGames.Misc {
             string result = source.Remove(place, oldValue.Length).Insert(place, newValue);
             return result;
         }
+        public static string ReplaceMiddle(this string source, string oldValue, string newValue){
+            int[] places = source.AllIndexesOf(oldValue);
+            if(places.Length==0)return source;
+            int halfSourceLength = source.Length/2;
+            int place = places.OrderBy(v=>Math.Abs(v-halfSourceLength)).First();
+            string result = source.Remove(place, oldValue.Length).Insert(place, newValue);
+            return result;
+        }
+        public static int[] AllIndexesOf(this string source, string value){
+            List<int> result = new List<int> { };
+            int i = source.IndexOf(value);
+            while(i!=-1) {
+                result.Add(i);
+                i = source.IndexOf(value, i+1);
+            }
+            return result.ToArray();
+        }
         public static void DrawPlayerHead(SpriteBatch spriteBatch, Player drawPlayer, Vector2 position, Color color = default, float Scale = 1f) {
 			PlayerHeadDrawInfo drawInfo = default(PlayerHeadDrawInfo);
 			drawInfo.spriteBatch = spriteBatch;
