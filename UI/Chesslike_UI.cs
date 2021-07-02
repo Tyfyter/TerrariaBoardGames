@@ -74,6 +74,8 @@ namespace BoardGames.UI {
                 packet.Write(7-target.Y);
                 packet.Write(otherPlayerId);
                 packet.Send();
+            } else if(gameMode==AI&&currentPlayer==0) {
+                moveMemory.Add(target);
             }
             if(selectedPiece.HasValue) {
                 GamePieceItemSlot slot = gamePieces.Index(selectedPiece.Value);

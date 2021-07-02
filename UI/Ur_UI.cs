@@ -163,6 +163,8 @@ namespace BoardGames.UI {
                 packet.Write(target.Y);
                 packet.Write(otherPlayerId);
                 packet.Send();
+            }else if(gameMode==AI&&currentPlayer==0) {
+                moveMemory.Add(target);
             }
             bool noAction = true;
             if(Grid[target.Y, target.X%2] == 'o') {

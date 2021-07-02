@@ -12,6 +12,7 @@ using Terraria.DataStructures;
 using Terraria.Graphics.Shaders;
 using Terraria.ModLoader;
 using Terraria.ID;
+using Terraria.Utilities;
 
 namespace BoardGames.Misc {
     public static class BoardGameExtensions {
@@ -182,6 +183,27 @@ namespace BoardGames.Misc {
                 return max;
             }
             return value;
+        }
+        public static List<Point> BuildPointList(int width, int height){
+            List<Point> result = new List<Point> { };
+            for(int y = 0; y < height; y++) {
+                for(int x = 0; x < width; x++) {
+                    result.Add(new Point(x,y));
+                }
+            }
+            return result;
+        }
+        public static void Shuffle<T>(this IList<T> list, UnifiedRandom rng = null) {
+            if(rng is null)rng = Main.rand;
+
+            int n = list.Count;
+            while (n > 1) {
+                n--;
+                int k = rng.Next(n + 1);
+                T value = list[k];
+                list[k] = list[n];
+                list[n] = value;
+            }
         }
     }
     public static class Reflected {

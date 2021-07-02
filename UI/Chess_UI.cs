@@ -73,6 +73,8 @@ namespace BoardGames.UI {
                 packet.Write(7-target.Y);
                 packet.Write(otherPlayerId);
                 packet.Send();
+            } else if(gameMode==AI&&currentPlayer==0) {
+                moveMemory.Add(target);
             }
             if(selectedPiece.HasValue) {
                 GamePieceItemSlot slot = gamePieces.Index(selectedPiece.Value);
@@ -123,6 +125,13 @@ namespace BoardGames.UI {
                     Main.NewText("White wins", Color.White);
                 } else {
                     Main.NewText("Black wins", Color.Gray);
+                }
+                break;
+                case AI:
+                if(winner == 0) {
+                    Main.NewText("Player wins", Color.White);
+                } else {
+                    Main.NewText("AI wins", Color.Gray);
                 }
                 break;
                 case ONLINE:

@@ -85,6 +85,8 @@ namespace BoardGames.UI {
                 packet.Write(7-target.Y);
                 packet.Write(otherPlayerId);
                 packet.Send();
+            } else if(gameMode==AI&&currentPlayer==0) {
+                moveMemory.Add(target);
             }
             Point? oldSelected = selectedPiece;
             if(selectedPiece.HasValue) {
@@ -118,6 +120,8 @@ namespace BoardGames.UI {
                 if(SlotEmpty(selectedPiece.Value) ?? true) {
                     selectedPiece = null;
                 } else if(gamePieces.Index(selectedPiece.Value)?.item?.type!=GamePieceTypes[currentPlayer]) {
+                    selectedPiece = null;
+                } else if(GetMoves(selectedPiece.Value).Length==0) {
                     selectedPiece = null;
                 }
             }
@@ -224,6 +228,13 @@ namespace BoardGames.UI {
                     Main.NewText("Black wins", Color.Gray);
                 } else {
                     Main.NewText("Red wins", Color.Red);
+                }
+                break;
+                case AI:
+                if(winner == 0) {
+                    Main.NewText("Player wins", Color.Gray);
+                } else {
+                    Main.NewText("AI wins", Color.Red);
                 }
                 break;
                 case ONLINE:

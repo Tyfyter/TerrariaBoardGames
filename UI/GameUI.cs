@@ -30,10 +30,12 @@ namespace BoardGames.UI {
         public int endGameTimeout = 0;
         public bool JustClicked => Main.mouseLeft && !oldMouseLeft;
         public Action<GameUI> customAI = null;
+        public List<Point> moveMemory;
         public override void OnInitialize() {
             Main.UIScaleMatrix.Decompose(out Vector3 scale, out Quaternion ignore, out Vector3 ignore2);
             Vector2 basePosition = new Vector2((float)(Main.screenWidth * 0.05), (float)(Main.screenHeight * 0.4));
             Vector2 slotSize = new Vector2(51 * scale.X, 51 * scale.Y);
+            moveMemory = new List<Point>{};
             /**gameMode = ONLINE;
             if(Main.netMode == NetmodeID.SinglePlayer) {
                 gameMode = LOCAL;
@@ -88,6 +90,9 @@ namespace BoardGames.UI {
             return (gamePieces[X,Y]?.item?.IsAir) ?? true;
         }
         public override void Update(GameTime gameTime) {
+            if(gameInactive) {
+                aiMoveTimeout = 0;
+            }
             Point boardSize = new Point(gamePieces.GetLength(0),gamePieces.GetLength(1));
             for(int i = 0; i < gamePieces.Length; i++) {
                 gamePieces[i % boardSize.X, i / boardSize.X].glowing = false;

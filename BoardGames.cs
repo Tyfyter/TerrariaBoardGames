@@ -43,27 +43,72 @@ namespace BoardGames {
             string[] chessPieceNames = Chess_Piece.PieceNames;
             string pieceName;
             Chess_Piece.Pieces = new int[12];
-            sounds = new List<SoundSet>{};
+            sounds = new List<SoundSet> { };
             for(int i = 0; i < 6; i++) {
                 pieceName = chessPieceNames[i];
-                AddItem("White_"+pieceName, new Chess_Piece(Chess_Piece.Moves.FromName(pieceName), true));
-                AddItem("Black_"+pieceName, new Chess_Piece(Chess_Piece.Moves.FromName(pieceName), false));
+                AddItem("White_" + pieceName, new Chess_Piece(Chess_Piece.Moves.FromName(pieceName), true));
+                AddItem("Black_" + pieceName, new Chess_Piece(Chess_Piece.Moves.FromName(pieceName), false));
             }
-			if (Main.netMode!=NetmodeID.Server){
+            if(Main.netMode != NetmodeID.Server) {
                 EmptySlotTexture = ModContent.GetTexture("BoardGames/Textures/Empty");
                 SelectorEndTexture = ModContent.GetTexture("BoardGames/UI/Selector_Back_End");
                 SelectorMidTexture = ModContent.GetTexture("BoardGames/UI/Selector_Back_Mid");
                 AIIconTexture = ModContent.GetTexture("BoardGames/Textures/Icons/AI");
                 ButtonEndTexture = ModContent.GetTexture("BoardGames/UI/Button_Back_End");
                 ButtonMidTexture = ModContent.GetTexture("BoardGames/UI/Button_Back_Mid");
-				UI = new UserInterface();
-			}
+                UI = new UserInterface();
+            }
             ChatManager.Register<GameInviteTagHandler>(new string[]{
-		        "game"
-	        });
-            ExternalGames = new Dictionary<string, Action<GameMode, int>>{};
+                "game"
+            });
+            ExternalGames = new Dictionary<string, Action<GameMode, int>> { };
+            void badChessAI(GameUI b) {
+                if(GameUI.rand is null) {
+                    GameUI.rand = new UnifiedRandom(Main.rand.Next(int.MinValue, int.MaxValue));
+                }
+                while(b.currentPlayer == 1) {
+                    b.SelectPiece(new Point(GameUI.rand.Next(8), GameUI.rand.Next(8)));
+                }
+            }
+            void badCheckersAI(GameUI b) {
+                Checkers_UI board = b as Checkers_UI;
+                if(GameUI.rand is null) {
+                    GameUI.rand = new UnifiedRandom(Main.rand.Next(int.MinValue, int.MaxValue));
+                }
+                List<Point> tiles = BoardGameExtensions.BuildPointList(8, 8);
+                tiles.Shuffle(GameUI.rand);
+                while(b.currentPlayer == 1) {
+                    Point select = tiles[0];
+                    tiles.RemoveAt(0);
+                    b.SelectPiece(select);
+                    (Point end, Point attacked)[] moves = board.GetMoves(select);
+                    if(moves.Length>0) {
+                        b.SelectPiece(GameUI.rand.Next(moves).end);
+                    } else {
+                        b.SelectPiece(select);
+                    }
+                }
+                b.aiMoveTimeout = 0;
+            }
+            Action<GameUI> getMirrorAI(Action<GameUI> fallbackAI) {
+                return (GameUI b) => {
+                    while(b.moveMemory.Count > 0) {
+                        b.SelectPiece(new Point(7 - b.moveMemory[0].X, 7 - b.moveMemory[0].Y));
+                        b.moveMemory.RemoveAt(0);
+                    }
+                    if(b.currentPlayer != 1) {
+                        b.aiMoveTimeout = 0;
+                        return;
+                    }
+                    fallbackAI(b);
+                };
+            }
             GameAI = new MultiDictionary<string, (string name, Action<GameUI> AI)> {
-                { "ur", ("default ai", null) }
+                { "ur", ("default ai", null) },
+                { "chess", ("quite atrocious ai", badChessAI) },
+                { "chess", ("mirror ai", getMirrorAI(badChessAI)) },
+                { "checkers", ("mirror ai", getMirrorAI(badCheckersAI)) },
+                { "draughts", ("mirror ai", getMirrorAI(badCheckersAI)) }
             };
         }
         public override void Unload() {
