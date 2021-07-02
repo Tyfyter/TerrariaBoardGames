@@ -17,12 +17,15 @@ namespace BoardGames.UI {
     public class GameSelectorMenu : UIState {
         public static Dictionary<string, (string[] text, Texture2D texture)> Games { get; private set; }
         public static event Action AddExternalGames;
+        public static int emergencyTexutredGames;
         public float totalHeight;
         public static void LoadTextures() {
             if(!(Games is null)) return;
             Games = new Dictionary<string, (string[], Texture2D)> {};
             AddGame("Ur");
             AddGame("Chess");
+            AddGame("Draughts", textureName:"Checkers");
+            AddGame("Checkers");
             if(!(AddExternalGames is null)) {
                 AddExternalGames();
                 AddExternalGames = null;
@@ -32,8 +35,13 @@ namespace BoardGames.UI {
         public static void UnloadTextures() {
             Games = null;
         }
-        public static void AddGame(string name, string modOrigin = "BoardGames") {
-            Games.Add(name.ToLower(), (new string[] {$"Mods.{modOrigin}.{name}.Name",$"Mods.{modOrigin}.{name}.Description"}, ModContent.GetTexture(modOrigin+"/Textures/Icons/"+name)) );
+        public static void AddGame(string name, string modOrigin = "BoardGames", string textureName = null) {
+            if(textureName is null)textureName = name;
+            try {
+                Games.Add(name.ToLower(), (new string[] {$"Mods.{modOrigin}.{name}.Name",$"Mods.{modOrigin}.{name}.Description"}, ModContent.GetTexture(modOrigin+"/Textures/Icons/"+textureName)) );
+            } catch(Exception) {
+                Games.Add(name.ToLower(), (new string[] {$"Mods.{modOrigin}.{name}.Name",$"Mods.{modOrigin}.{name}.Description"}, Main.itemTexture[++emergencyTexutredGames]) );
+            }
         }
         public override void OnActivate() {
 		    Main.PlaySound(SoundID.MenuOpen);
@@ -46,14 +54,14 @@ namespace BoardGames.UI {
             if(!(Elements is null))Elements.Clear();
             Main.UIScaleMatrix.Decompose(out Vector3 scale, out Quaternion _, out Vector3 _);
             totalHeight = 39*scale.Y;
-            var gameList = Games.OrderBy((v)=>v.Key).ToArray();
+            var gameList = Games.ToArray();//.OrderBy((v)=>v.Key).ToArray();
             GameSelectorItem element;
             for(int i = 0; i < gameList.Length; i++) {
                 element = new GameSelectorItem(gameList[i].Value.texture, gameList[i].Value.text);
-                element.Left.Set(element.GetOuterDimensions().Width*-0.5f, 0.2f+(0.3f*(i%4)));
+                element.Left.Set(element.GetOuterDimensions().Width*-0.5f, 0.05f+(0.3f*(i%3)));
                 element.Width.Set(62.4f*scale.X, 0);
                 element.Height.Set(62.4f*scale.Y, 0);
-                if(i%4==0)
+                if(i%3==0)
                     totalHeight += element.Height.Pixels;
                 element.Top.Set(totalHeight-element.Height.Pixels*1.5f, 0);
                 element.OnClick += GameSelectorItem.GetClickEvent(gameList[i].Key);
@@ -141,7 +149,7 @@ namespace BoardGames.UI {
         }
         public static MouseEvent GetClickEvent(string game) {
             return (ev, el) => {
-                if(Main.netMode == NetmodeID.SinglePlayer) {
+                if(Main.netMode == NetmodeID.SinglePlayer && !BoardGames.GameAI.ContainsKey(game)) {
                     BoardGames.OpenGameByName(game);
                 } else {
                     BoardGames.Instance.selectedGame = game;

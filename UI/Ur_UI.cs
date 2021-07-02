@@ -127,7 +127,7 @@ namespace BoardGames.UI {
                 }
             }
             if(aiMoveTimeout>0) {
-                if(++aiMoveTimeout > 30) {
+                if(++aiMoveTimeout > BoardGames.ai_move_time) {
                     AIMove();
                 }
             }
@@ -260,7 +260,7 @@ namespace BoardGames.UI {
             }
             rolled = true;
         }
-        public void AIMove() {
+        public void DefaultAI() {
             Point AiMove = new Point();
             aiMoveTimeout = 0;
             List<Point> allMoves = new List<Point> { };
@@ -337,6 +337,13 @@ namespace BoardGames.UI {
                 BoardGames.Instance.Logger.Warn(warning);
                 Main.NewText(warning, Color.OrangeRed);
                 endTurnTimeout = 1;
+            }
+        }
+        public void AIMove() {
+            if(customAI is null) {
+                DefaultAI();
+            } else {
+                customAI(this);
             }
         }
         public bool CanMoveFrom(Point value) {

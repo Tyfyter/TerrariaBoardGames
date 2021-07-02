@@ -32,7 +32,7 @@ namespace BoardGames.UI {
                     for(int i = 0; i < 8; i++) {
                         gamePieces[i, j] = AddSlot(null,
                             basePosition + slotSize * new Vector2(i, j),
-                            BoardTextures[(i+j)&1],
+                            BoardTextures[(i+(j*8))%BoardTextures.Length],
                             slotScale: scale.X,
                             HighlightMoves:null
                         );
@@ -60,6 +60,11 @@ namespace BoardGames.UI {
                 gamePieces.Index(selectedPiece.Value).glowing = true;
             }
             HighlightMoves();
+            if(aiMoveTimeout>0) {
+                if(++aiMoveTimeout > BoardGames.ai_move_time) {
+                    customAI(this);
+                }
+            }
         }
         public override void SelectPiece(Point target) {
             if(gameMode==ONLINE&&currentPlayer==owner) {
@@ -147,6 +152,9 @@ namespace BoardGames.UI {
             gameInactive = true;
         }
         public void EndTurn() {
+            if(gameMode==AI&&currentPlayer==0) {
+                aiMoveTimeout = 1;
+            }
             currentPlayer ^= 1;
             if(gameMode==LOCAL)owner = currentPlayer;
         }

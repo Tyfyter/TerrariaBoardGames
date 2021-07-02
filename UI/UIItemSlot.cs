@@ -68,8 +68,10 @@ namespace BoardGames.UI {
             item.stack = 1;
             Vector2 itemPos = rectangle.TopLeft();
             if(!ParentUI.gameInactive) {
-                ItemSlot.Draw(spriteBatch, ref item, ItemSlot.Context.MouseItem, itemPos);
-                itemPos.Y -= rectangle.Height*0.1f;
+                for(int i = stack; i-->0;) {
+                    ItemSlot.Draw(spriteBatch, ref item, ItemSlot.Context.MouseItem, itemPos);
+                    itemPos.Y -= rectangle.Height*0.0625f;
+                }
             }
             item.stack = stack;
 			Main.inventoryScale = oldScale;

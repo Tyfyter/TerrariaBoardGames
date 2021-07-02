@@ -16,19 +16,24 @@ namespace BoardGames.UI {
         public override void TryLoadTextures() => LoadTextures();
         public static int[] GamePieceTypes { get; private set; }
         public static Texture2D[] BoardTextures { get; private set; }
+        public static Point NoAttack => new Point(-1,-1);
+        public bool mandatoryJumps = false;
+        public bool hasJumps = false;
+        public bool movedOnce = false;
         public static void LoadTextures() {
             BoardTextures = new Texture2D[] {
-                ModContent.GetTexture("BoardGames/Textures/Chess/Tile_White"),
-                ModContent.GetTexture("BoardGames/Textures/Chess/Tile_Black")
+                ModContent.GetTexture("BoardGames/Textures/Checkers_Tile_Light"),
+                ModContent.GetTexture("BoardGames/Textures/Checkers_Tile_Dark")
             };
             GamePieceTypes = new int[] {
-                ModContent.ItemType<Textures.Pieces.Red>(),
-                ModContent.ItemType<Textures.Pieces.Black>()
+                ModContent.ItemType<Textures.Pieces.Black>(),
+                ModContent.ItemType<Textures.Pieces.Red>()
             };
             BoardGames.UnloadTextures += UnloadTextures;
         }
         public static void UnloadTextures() {
             BoardTextures = null;
+            GamePieceTypes = null;
         }
         protected override void Init(Vector3 scale, Vector2 basePosition, Vector2 slotSize) {
             basePosition = new Vector2((float)(Main.screenWidth * 0.5), (float)(Main.screenHeight * 0.5));
@@ -50,7 +55,6 @@ namespace BoardGames.UI {
             }
             if(gameMode!=ONLINE) {
                 SetupGame();
-                Main.NewText("set up chess game because it was not set to online mode");
             }
         }
         public override void Update(GameTime gameTime) {
@@ -67,6 +71,11 @@ namespace BoardGames.UI {
                 gamePieces.Index(selectedPiece.Value).glowing = true;
             }
             HighlightMoves();
+            if(aiMoveTimeout>0) {
+                if(++aiMoveTimeout > BoardGames.ai_move_time) {
+                    customAI(this);
+                }
+            }
         }
         public override void SelectPiece(Point target) {
             if(gameMode==ONLINE&&currentPlayer==owner) {
@@ -77,63 +86,152 @@ namespace BoardGames.UI {
                 packet.Write(otherPlayerId);
                 packet.Send();
             }
+            Point? oldSelected = selectedPiece;
             if(selectedPiece.HasValue) {
-                GamePieceItemSlot slot = gamePieces.Index(selectedPiece.Value);
-                Chess_Piece piece = slot?.item?.modItem as Chess_Piece;
-                if(!(piece is null)) {
-                    int pieceType = piece.item.type;
-                    Point[] moves = new Point[0];
-                    int dir = 0;
-                    if(gameMode==ONLINE) {
-                        dir = (owner==1)^piece.White?1:-1;
-                    } else {
-                        dir = piece.White ? 1 : -1;
-                    }
-                    moves = piece.GetMoves(slot, dir);
-                    if(moves.Contains(target)) {
+                if(movedOnce && !mandatoryJumps && selectedPiece == target) {
+                    EndTurn();
+                } else {
+                    (Point end, Point attacked)[] moves = GetMoves(selectedPiece.Value).Where((v) => v.end == target).ToArray();
+                    if(moves.Length > 0 && (!hasJumps||moves[0].attacked!=NoAttack)) {
+                        bool jumped = false;
+                        int dir = (gameMode == ONLINE ? (currentPlayer == owner) : (currentPlayer == 0)) ? 1 : -1;
+                        Item item = gamePieces.Index(selectedPiece.Value).item;
+                        gamePieces.Index(selectedPiece.Value).SetItem(null);
+                        if(moves[0].attacked != NoAttack) {
+                            gamePieces.Index(moves[0].attacked).SetItem(null);
+                            jumped = true;
+                        }
+                        if(target.Y == (3.5f - (dir * 3.5f))) {
+                            item.stack = 2;
+                        }
+                        gamePieces.Index(target).SetItem(item);
+                        movedOnce = true;
+                        if(!jumped || GetMoves(target).Where((v) => v.attacked != NoAttack).Count() == 0) {
+                            EndTurn();
+                        }
                         selectedPiece = target;
-                        if((3.5f-(dir*3.5f))==target.Y&&piece.GetMoves==Chess_Piece.Moves.Pawn) {
-                            pieceType = piece.White ? Chess_Piece.White_Queen : Chess_Piece.Black_Queen;
-                        }
-                        GamePieceItemSlot targetSlot = gamePieces.Index(selectedPiece.Value);
-                        if(targetSlot?.item?.type==Chess_Piece.White_King||targetSlot?.item?.type==Chess_Piece.Black_King) {
-                            EndGame(currentPlayer);
-                        }
-                        targetSlot.SetItem(pieceType);
-                        slot.SetItem(null);
-                        EndTurn();
-                        //Main.PlaySound(new Terraria.Audio.LegacySoundStyle(21, 0, Terraria.Audio.SoundType.Sound), Main.LocalPlayer.MountedCenter).Pitch = 1;
                     }
                 }
             }
-            Point? oldSelected = selectedPiece;
-            base.SelectPiece(target);
+            if(!movedOnce)base.SelectPiece(target);
             if(selectedPiece.HasValue) {
                 if(SlotEmpty(selectedPiece.Value) ?? true) {
                     selectedPiece = null;
-                } else if((gamePieces.Index(selectedPiece.Value).item.modItem as Chess_Piece)?.White==(currentPlayer==1)) {
+                } else if(gamePieces.Index(selectedPiece.Value)?.item?.type!=GamePieceTypes[currentPlayer]) {
                     selectedPiece = null;
                 }
             }
             if(oldSelected != selectedPiece) {
-                Main.PlaySound(new Terraria.Audio.LegacySoundStyle(21, 0, Terraria.Audio.SoundType.Sound), Main.LocalPlayer.MountedCenter).Pitch = 1;
+                Main.PlaySound(new Terraria.Audio.LegacySoundStyle(21, 0, Terraria.Audio.SoundType.Sound), Main.LocalPlayer.MountedCenter).Pitch = 0.75f;
             }
+        }
+        public bool HasMoves() {
+            bool o = false;
+            (Point end, Point attacked)[] moves;
+            for(int j = 0; j < 8; j++) {
+                for(int i = 0; i < 8; i++) {
+                    moves = GetMoves(new Point(i, j));
+                    if(moves.Length>0) {
+                        if(!mandatoryJumps)return true;
+                        o = true;
+                        if(moves.Any((v)=>v.attacked!=NoAttack)) {
+                            hasJumps = true;
+                            return true;
+                        }
+                    }
+                }
+            }
+            return o;
+        }
+        public (Point end, Point attacked)[] GetMoves(Point start) {
+            if(SlotEmpty(start) ?? true) {
+                return new (Point,Point)[0];
+            }
+            GamePieceItemSlot slot = gamePieces.Index(start);
+            if(slot.item.type!=GamePieceTypes[currentPlayer]) {
+                return new (Point,Point)[0];
+            }
+            List<(Point end, Point attacked)> moves = new List<(Point,Point)>{};
+            int dir = (gameMode == ONLINE ?(currentPlayer==owner):(currentPlayer==0))?1:-1;
+            int tier = slot.item.stack;
+            int startX = start.X;
+            int startY = start.Y;
+            bool hasJump = false;
+            switch(SlotEmpty(startX - 1, startY - dir)) {
+                case true:
+                moves.Add((new Point(startX - 1, startY - dir), NoAttack));
+                break;
+                case false:
+                if(gamePieces[startX - 1, startY - dir]?.item?.type==GamePieceTypes[currentPlayer^1]) {
+                    if(SlotEmpty(startX - 2, startY - (dir*2)) ?? false) {
+                        moves.Add((new Point(startX - 2, startY - (dir*2)), new Point(startX - 1, startY - dir)));
+                        hasJump = true;
+                    }
+                }
+                break;
+            }
+            switch(SlotEmpty(startX + 1, startY - dir)) {
+                case true:
+                moves.Add((new Point(startX + 1, startY - dir), NoAttack));
+                break;
+                case false:
+                if(gamePieces[startX + 1, startY - dir]?.item?.type==GamePieceTypes[currentPlayer^1]) {
+                    if(SlotEmpty(startX + 2, startY - (dir*2)) ?? false) {
+                        moves.Add((new Point(startX + 2, startY - (dir*2)), new Point(startX + 1, startY - dir)));
+                        hasJump = true;
+                    }
+                }
+                break;
+            }
+            if(tier>1) {
+                switch(SlotEmpty(startX - 1, startY + dir)) {
+                    case true:
+                    moves.Add((new Point(startX - 1, startY + dir), NoAttack));
+                    break;
+                    case false:
+                    if(gamePieces[startX - 1, startY + dir]?.item?.type==GamePieceTypes[currentPlayer^1]) {
+                        if(SlotEmpty(startX - 2, startY + (dir*2)) ?? false) {
+                            moves.Add((new Point(startX - 2, startY + (dir*2)), new Point(startX - 1, startY + dir)));
+                            hasJump = true;
+                        }
+                    }
+                    break;
+                }
+                switch(SlotEmpty(startX + 1, startY + dir)) {
+                    case true:
+                    moves.Add((new Point(startX + 1, startY + dir), NoAttack));
+                    break;
+                    case false:
+                    if(gamePieces[startX + 1, startY + dir]?.item?.type==GamePieceTypes[currentPlayer^1]) {
+                        if(SlotEmpty(startX + 2, startY + (dir*2)) ?? false) {
+                            moves.Add((new Point(startX + 2, startY + (dir*2)), new Point(startX + 1, startY + dir)));
+                            hasJump = true;
+                        }
+                    }
+                    break;
+                }
+            }
+            if(mandatoryJumps&&hasJump) {
+                hasJumps = true;
+                moves.RemoveAll((v)=>v.attacked==NoAttack);
+            }
+            return moves.ToArray();
         }
         public void EndGame(int winner) {
             switch(gameMode) {
                 case LOCAL:
                 if(winner == 0) {
-                    Main.NewText("White wins", Color.White);
-                } else {
                     Main.NewText("Black wins", Color.Gray);
+                } else {
+                    Main.NewText("Red wins", Color.Red);
                 }
                 break;
                 case ONLINE:
                 int notOwner = owner^1;
                 if(winner==0) {
-                    Main.NewText(Main.player[(owner*otherPlayerId)+(notOwner*Main.myPlayer)].name+" wins", Color.White);
+                    Main.NewText(Main.player[(owner*otherPlayerId)+(notOwner*Main.myPlayer)].name+" wins", Color.Gray);
                 } else {
-                    Main.NewText(Main.player[(notOwner*otherPlayerId)+(owner*Main.myPlayer)].name+" wins", Color.Gray);
+                    Main.NewText(Main.player[(notOwner*otherPlayerId)+(owner*Main.myPlayer)].name+" wins", Color.Red);
                 }
                 break;
             }
@@ -141,69 +239,47 @@ namespace BoardGames.UI {
             gameInactive = true;
         }
         public void EndTurn() {
+            if(gameMode==AI&&currentPlayer==0) {
+                aiMoveTimeout = 1;
+            }
             currentPlayer ^= 1;
+            movedOnce = false;
+            hasJumps = false;
             if(gameMode==LOCAL)owner = currentPlayer;
+            if(!HasMoves()) {
+                EndGame(currentPlayer ^ 1);
+            }
         }
         public void HighlightMoves() {
             if(!selectedPiece.HasValue)return;
             GamePieceItemSlot slot = gamePieces.Index(selectedPiece.Value);
-            Chess_Piece piece = slot?.item?.modItem as Chess_Piece;
-            if(!(piece is null)) {
-                Point[] moves = new Point[0];
-                if(gameMode==ONLINE) {
-                    moves = piece.GetMoves(slot, (owner==1)^piece.White?1:-1);
-                } else {
-                    moves = piece.GetMoves(slot, piece.White?1:-1);
-                }
-                for(int i = moves.Length; i-->0;) {
-                    gamePieces.Index(moves[i]).glowing = true;
-                }
-            }
         }
         public override Color GetTileColor(bool glowing) {
-            return gameInactive ? new Color(128,128,128,128) : (glowing ? Color.White : new Color(175, 165, 165));
+            return gameInactive ? new Color(128,128,128,128) : (glowing ? Color.White : new Color(165, 165, 175));
         }
         public override void SetupGame() {
             char[,] pieces = new char[8, 8] {
-                {'r','n','b','q','k','b','n','r'},
-                {'p','p','p','p','p','p','p','p'},
+                {'o','c','o','c','o','c','o','c'},
+                {'c','o','c','o','c','o','c','o'},
+                {'o','c','o','c','o','c','o','c'},
                 {'o','o','o','o','o','o','o','o'},
                 {'o','o','o','o','o','o','o','o'},
-                {'o','o','o','o','o','o','o','o'},
-                {'o','o','o','o','o','o','o','o'},
-                {'p','p','p','p','p','p','p','p'},
-                {'r','n','b','q','k','b','n','r'}
+                {'c','o','c','o','c','o','c','o'},
+                {'o','c','o','c','o','c','o','c'},
+                {'c','o','c','o','c','o','c','o'}
             };
             int type = -1;
             for(int j = 0; j < 8; j++) {
                 for(int i = 0; i < 8; i++) {
                     type = -1;
-                    switch(pieces[j,i]) {
-                        case 'p':
-                        type = 0 + owner;
-                        break;
-                        case 'r':
-                        type = 2 + owner;
-                        break;
-                        case 'b':
-                        type = 4 + owner;
-                        break;
-                        case 'n':
-                        type = 6 + owner;
-                        break;
-                        case 'q':
-                        type = 8 + (owner*3);
-                        break;
-                        case 'k':
-                        type = 10 - owner;
-                        break;
+                    if(pieces[j, i]=='c') {
+                        type = owner;
                     }
                     if(type!=-1) {
-                        BoardGames.Instance.Logger.Info("piece"+pieces[j,i]+":"+owner+":"+j+":"+type);
                         if(j<4) {
                             type ^= 1;
                         }
-                        gamePieces[i, j].SetItem(Chess_Piece.Pieces[type]);
+                        gamePieces[i, j].SetItem(GamePieceTypes[type]);
                     }
                 }
             }

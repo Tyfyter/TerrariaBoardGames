@@ -4,3 +4,9 @@ Ur.Description=Possibly the oldest board game in the world. <SP>This game was re
 
 Chess.Name="Unsafe Chess"
 Chess.Description=Like regular chess, <SP>but with a few changes to the rules <SP>that make it more like actual war (and much simpler to implement)
+
+Draughts.Name=English draughts (mandatory captures)
+Draughts.Description=
+
+Checkers.Name=English draughts (no mandatory captures)
+Checkers.Description=

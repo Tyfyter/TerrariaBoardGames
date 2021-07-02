@@ -29,6 +29,7 @@ namespace BoardGames.UI {
         public static UnifiedRandom rand;
         public int endGameTimeout = 0;
         public bool JustClicked => Main.mouseLeft && !oldMouseLeft;
+        public Action<GameUI> customAI = null;
         public override void OnInitialize() {
             Main.UIScaleMatrix.Decompose(out Vector3 scale, out Quaternion ignore, out Vector3 ignore2);
             Vector2 basePosition = new Vector2((float)(Main.screenWidth * 0.05), (float)(Main.screenHeight * 0.4));

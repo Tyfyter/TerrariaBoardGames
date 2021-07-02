@@ -59,6 +59,11 @@ namespace BoardGames.UI {
                 gamePieces.Index(selectedPiece.Value).glowing = true;
             }
             HighlightMoves();
+            if(aiMoveTimeout>0) {
+                if(++aiMoveTimeout > BoardGames.ai_move_time) {
+                    customAI(this);
+                }
+            }
         }
         public override void SelectPiece(Point target) {
             if(gameMode==ONLINE&&currentPlayer==owner) {
@@ -84,7 +89,7 @@ namespace BoardGames.UI {
                     moves = piece.GetMoves(slot, dir);
                     if(moves.Contains(target)) {
                         selectedPiece = target;
-                        if((3.5f-(dir*3.5f))==target.Y&&piece.GetMoves==Chess_Piece.Moves.Pawn) {
+                        if(target.Y==(3.5f-(dir*3.5f))&&piece.GetMoves==Chess_Piece.Moves.Pawn) {
                             pieceType = piece.White ? Chess_Piece.White_Queen : Chess_Piece.Black_Queen;
                         }
                         GamePieceItemSlot targetSlot = gamePieces.Index(selectedPiece.Value);
@@ -133,6 +138,9 @@ namespace BoardGames.UI {
             gameInactive = true;
         }
         public void EndTurn() {
+            if(gameMode==AI&&currentPlayer==0) {
+                aiMoveTimeout = 1;
+            }
             currentPlayer ^= 1;
             if(gameMode==LOCAL)owner = currentPlayer;
         }

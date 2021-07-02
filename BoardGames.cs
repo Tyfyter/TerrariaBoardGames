@@ -25,13 +25,17 @@ namespace BoardGames {
         public static Texture2D EmptySlotTexture { get; private set; }
         public static Texture2D SelectorEndTexture { get; private set; }
         public static Texture2D SelectorMidTexture { get; private set; }
+        public static Texture2D AIIconTexture { get; private set; }
         public static event Action UnloadTextures;
 		internal UserInterface UI;
 		public GameUI Game;
 		public UIState Menu;
         internal List<SoundSet> sounds;
         public static Dictionary<string, Action<GameMode, int>> ExternalGames { get; private set; }
+        public static MultiDictionary<string, (string name, Action<GameUI> AI)> GameAI { get; private set; }
         public string selectedGame;
+        public const int ai_move_time = 30;
+
         public override void Load() {
             Instance = this;
             string[] chessPieceNames = Chess_Piece.PieceNames;
@@ -47,23 +51,29 @@ namespace BoardGames {
                 EmptySlotTexture = ModContent.GetTexture("BoardGames/Textures/Empty");
                 SelectorEndTexture = ModContent.GetTexture("BoardGames/UI/Selector_Back_End");
                 SelectorMidTexture = ModContent.GetTexture("BoardGames/UI/Selector_Back_Mid");
+                AIIconTexture = ModContent.GetTexture("BoardGames/Textures/Icons/AI");
 				UI = new UserInterface();
 			}
             ChatManager.Register<GameInviteTagHandler>(new string[]{
 		        "game"
 	        });
             ExternalGames = new Dictionary<string, Action<GameMode, int>>{};
+            GameAI = new MultiDictionary<string, (string name, Action<GameUI> AI)> {
+                { "ur", ("default ai", null) }
+            };
         }
         public override void Unload() {
             EmptySlotTexture = null;
             SelectorEndTexture = null;
             SelectorMidTexture = null;
+            AIIconTexture = null;
             if(!(UnloadTextures is null))UnloadTextures();
             UnloadTextures = null;
             Chess_Piece.Pieces = null;
             sounds = null;
             BoardGamesPlayer.SteamIDs = null;
             ExternalGames = null;
+            GameAI = null;
             Instance = null;
         }
         public void OpenGame<GameType>(GameMode gameMode = GameMode.LOCAL, int otherPlayer = -1) where GameType : GameUI, new(){
@@ -80,6 +90,13 @@ namespace BoardGames {
                 return;
                 case "chess":
                 Instance.OpenGame<Chess_UI>(gameMode, otherPlayer);
+                return;
+                case "draughts":
+                Instance.OpenGame<Checkers_UI>(gameMode, otherPlayer);
+                ((Checkers_UI)Instance.Game).mandatoryJumps = true;
+                return;
+                case "checkers":
+                Instance.OpenGame<Checkers_UI>(gameMode, otherPlayer);
                 return;
             }
             if(ExternalGames?.ContainsKey(name)??false) {

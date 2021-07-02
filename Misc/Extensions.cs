@@ -24,7 +24,7 @@ namespace BoardGames.Misc {
             string result = source.Remove(place, oldValue.Length).Insert(place, newValue);
             return result;
         }
-        public static void DrawPlayerHead(SpriteBatch spriteBatch, Player drawPlayer, Vector2 position, float Scale = 1f) {
+        public static void DrawPlayerHead(SpriteBatch spriteBatch, Player drawPlayer, Vector2 position, Color color = default, float Scale = 1f) {
 			PlayerHeadDrawInfo drawInfo = default(PlayerHeadDrawInfo);
 			drawInfo.spriteBatch = spriteBatch;
 			drawInfo.drawPlayer = drawPlayer;
@@ -59,11 +59,11 @@ namespace BoardGames.Misc {
 		        Main.playerHairAltTexture[drawPlayer.hair] = Main.instance.OurLoad<Texture2D>("Images" + Path.DirectorySeparatorChar.ToString() + "Player_HairAlt_" + (drawPlayer.hair + 1).ToString());
 		        Main.hairLoaded[drawPlayer.hair] = true;
 	        }
-            Color eyeWhiteColor = drawInfo.eyeWhiteColor = Color.White;
-            Color eyeColor = drawInfo.eyeColor = drawPlayer.eyeColor;
-            Color hairColor = drawInfo.hairColor = drawPlayer.GetHairColor(useLighting: false);
-            Color skinColor = drawInfo.skinColor = drawPlayer.skinColor;
-            Color armorColor = drawInfo.armorColor = Color.White;
+            Color eyeWhiteColor = drawInfo.eyeWhiteColor = color;
+            Color eyeColor = drawInfo.eyeColor = drawPlayer.eyeColor.MultiplyRGBA(color);
+            Color hairColor = drawInfo.hairColor = drawPlayer.GetHairColor(useLighting: false).MultiplyRGBA(color);
+            Color skinColor = drawInfo.skinColor = drawPlayer.skinColor.MultiplyRGBA(color);
+            Color armorColor = drawInfo.armorColor = color;
 			SpriteEffects spriteEffects = drawInfo.spriteEffects = SpriteEffects.None;
 			Vector2 origin = drawInfo.drawOrigin = new Vector2(drawPlayer.legFrame.Width * 0.5f, drawPlayer.legFrame.Height * 0.35f);
 			if (drawPlayer.head > 0 && drawPlayer.head < 216) {
@@ -157,14 +157,22 @@ namespace BoardGames.Misc {
 				}
 			}
 		}
+        public static T Clamp<T>(T value, T min, T max) where T : IComparable<T>{
+            if(value.CompareTo(min)<0) {
+                return min;
+            }
+            if(value.CompareTo(max)>0) {
+                return max;
+            }
+            return value;
+        }
     }
     public static class Reflected {
-        public static On.Terraria.Main.orig_DrawPlayerHead DrawPlayerHead { get; private set; }
         public static void Load() {
-            DrawPlayerHead = (On.Terraria.Main.orig_DrawPlayerHead)typeof(Main).GetMethod("DrawPlayerHead", BindingFlags.NonPublic | BindingFlags.Instance).CreateDelegate(typeof(On.Terraria.Main.orig_DrawPlayerHead));
+
         }
         public static void Unload() {
-            DrawPlayerHead = null;
+
         }
     }
 }
