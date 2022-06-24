@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Terraria;
+using Terraria.Audio;
+using Terraria.GameContent;
 using Terraria.ModLoader;
 using Microsoft.Xna.Framework;
 using static BoardGames.UI.GameMode;
@@ -202,7 +204,7 @@ namespace BoardGames.UI {
                         gamePieces.Index(slotB).SetItem(gamePieces[slotA.X, slotA.Y].item);
                         gamePieces.Index(slotA).SetItem(null);
                     }
-                    Main.PlaySound(new Terraria.Audio.LegacySoundStyle(21, 0, Terraria.Audio.SoundType.Sound), Main.LocalPlayer.MountedCenter).Pitch=1;
+                    SoundEngine.PlaySound(new Terraria.Audio.LegacySoundStyle(21, 0, Terraria.Audio.SoundType.Sound), Main.LocalPlayer.MountedCenter).Pitch=1;
                     if(Grid[slotB.Y, slotB.X % 2] == 'r') {
                         rolled = false;
                         if(gameMode==AI&&currentPlayer!=0) {
@@ -422,7 +424,7 @@ namespace BoardGames.UI {
             base.Draw(spriteBatch);
             if(gameInactive) return;
             Vector2 rollPos = gamePieces[currentPlayer * 2, 5].GetDimensions().ToRectangle().Center();
-            var font = Main.fontCombatText[1];
+            var font = FontAssets.CombatText[1].Value;
             string text = "roll";
             if(rolled){
                 text = "" + roll;
@@ -432,11 +434,11 @@ namespace BoardGames.UI {
             Rectangle pieceSquare = gamePieces[1, 7].GetDimensions().ToRectangle();
             Vector2 centerPos = pieceSquare.Center();
             for(int i = remainingPieces[0]; i-->0;)
-                spriteBatch.Draw(Main.itemTexture[GamePieceTypes[0]],
+                spriteBatch.Draw(TextureAssets.Item[GamePieceTypes[0]].Value,
                     centerPos+new Vector2(pieceSquare.Width*-3, pieceSquare.Height*(remainingPieces[0]-i)*-0.5f),
                     (i < activePieces[0])?new Color(150,150,150,150):Color.White);
             for(int i = remainingPieces[1]; i-->0;)
-                spriteBatch.Draw(Main.itemTexture[GamePieceTypes[1]],
+                spriteBatch.Draw(TextureAssets.Item[GamePieceTypes[1]].Value,
                     centerPos+new Vector2(pieceSquare.Width*3, pieceSquare.Height*(remainingPieces[1]-i)*-0.5f),
                     (i < activePieces[1])?new Color(150,150,150,150):Color.White);
             DieSpriteSet spriteSet;

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Terraria;
+using Terraria.GameContent;
 using Terraria.ModLoader;
 using Microsoft.Xna.Framework;
 using Terraria.ID;
@@ -35,16 +36,16 @@ namespace BoardGames.Textures.Chess {
         }
 		public override void AutoStaticDefaults() {
             try {
-                Main.itemTexture[item.type] = ModContent.GetTexture("BoardGames/Textures/Chess/"+Name);
+                TextureAssets.Item[Item.type].Value = ModContent.GetTexture("BoardGames/Textures/Chess/"+Name);
             } catch(Exception) {
-                Main.itemTexture[item.type] = ModContent.GetTexture("BoardGames/Textures/Chess/"+(White?"White":"Black")+"_Pawn");
+                TextureAssets.Item[Item.type].Value = ModContent.GetTexture("BoardGames/Textures/Chess/"+(White?"White":"Black")+"_Pawn");
             }
 			if (DisplayName.IsDefault())DisplayName.SetDefault(Name.Replace('_',' ').Trim());
 		}
         public override void SetStaticDefaults() {
             for(int i = 0; i < 12; i++) {
                 if(Pieces[i]==0) {
-                    Pieces[i] = item.type;
+                    Pieces[i] = Item.type;
                     break;
                 }
             }
@@ -79,17 +80,17 @@ namespace BoardGames.Textures.Chess {
                 Chess_UI ui = slot.ParentUI as Chess_UI;
                 Point pos = slot.index;
                 List<Point> moves = new List<Point>{};
-                Chess_Piece self = (Chess_Piece)slot.item.modItem;
+                Chess_Piece self = (Chess_Piece)slot.item.ModItem;
                 Point currentPos = pos;
                 currentPos.Y -= YSign;
                 if(ui.SlotEmpty(currentPos)??false) {
                     moves.Add(currentPos);
                 }
                 if(!(ui.SlotEmpty(currentPos.X-1,currentPos.Y)??true)) {
-                    if((ui.gamePieces[currentPos.X-1,currentPos.Y].item.modItem as Chess_Piece)?.White != self.White)moves.Add(new Point(currentPos.X-1,currentPos.Y));
+                    if((ui.gamePieces[currentPos.X-1,currentPos.Y].item.ModItem as Chess_Piece)?.White != self.White)moves.Add(new Point(currentPos.X-1,currentPos.Y));
                 }
                 if(!(ui.SlotEmpty(currentPos.X+1,currentPos.Y)??true)) {
-                    if((ui.gamePieces[currentPos.X+1,currentPos.Y].item.modItem as Chess_Piece)?.White != self.White)moves.Add(new Point(currentPos.X+1,currentPos.Y));
+                    if((ui.gamePieces[currentPos.X+1,currentPos.Y].item.ModItem as Chess_Piece)?.White != self.White)moves.Add(new Point(currentPos.X+1,currentPos.Y));
                 }
                 if(pos.Y==(YSign>0?6:1)) {
                     currentPos.Y -= YSign;
@@ -103,7 +104,7 @@ namespace BoardGames.Textures.Chess {
                 Chess_UI ui = slot.ParentUI as Chess_UI;
                 Point pos = slot.index;
                 List<Point> moves = new List<Point>{};
-                Chess_Piece self = (Chess_Piece)slot.item.modItem;
+                Chess_Piece self = (Chess_Piece)slot.item.ModItem;
                 #region up
                 bool valid = true;
                 Point currentPos = pos;
@@ -115,7 +116,7 @@ namespace BoardGames.Textures.Chess {
                         break;
                         case false:
                         valid = false;
-                        if(ui.gamePieces.Index(currentPos).item.modItem is Chess_Piece target && target.White != self.White) {
+                        if(ui.gamePieces.Index(currentPos).item.ModItem is Chess_Piece target && target.White != self.White) {
                             moves.Add(currentPos);
                         }
                         break;
@@ -136,7 +137,7 @@ namespace BoardGames.Textures.Chess {
                         break;
                         case false:
                         valid = false;
-                        if(ui.gamePieces.Index(currentPos).item.modItem is Chess_Piece target && target.White != self.White) {
+                        if(ui.gamePieces.Index(currentPos).item.ModItem is Chess_Piece target && target.White != self.White) {
                             moves.Add(currentPos);
                         }
                         break;
@@ -157,7 +158,7 @@ namespace BoardGames.Textures.Chess {
                         break;
                         case false:
                         valid = false;
-                        if(ui.gamePieces.Index(currentPos).item.modItem is Chess_Piece target && target.White != self.White) {
+                        if(ui.gamePieces.Index(currentPos).item.ModItem is Chess_Piece target && target.White != self.White) {
                             moves.Add(currentPos);
                         }
                         break;
@@ -178,7 +179,7 @@ namespace BoardGames.Textures.Chess {
                         break;
                         case false:
                         valid = false;
-                        if(ui.gamePieces.Index(currentPos).item.modItem is Chess_Piece target && target.White != self.White) {
+                        if(ui.gamePieces.Index(currentPos).item.ModItem is Chess_Piece target && target.White != self.White) {
                             moves.Add(currentPos);
                         }
                         break;
@@ -194,7 +195,7 @@ namespace BoardGames.Textures.Chess {
                 Chess_UI ui = slot.ParentUI as Chess_UI;
                 Point pos = slot.index;
                 List<Point> moves = new List<Point>{};
-                Chess_Piece self = (Chess_Piece)slot.item.modItem;
+                Chess_Piece self = (Chess_Piece)slot.item.ModItem;
                 #region up/right
                 bool valid = true;
                 Point currentPos = pos;
@@ -207,7 +208,7 @@ namespace BoardGames.Textures.Chess {
                         break;
                         case false:
                         valid = false;
-                        if(ui.gamePieces.Index(currentPos).item.modItem is Chess_Piece target && target.White != self.White) {
+                        if(ui.gamePieces.Index(currentPos).item.ModItem is Chess_Piece target && target.White != self.White) {
                             moves.Add(currentPos);
                         }
                         break;
@@ -229,7 +230,7 @@ namespace BoardGames.Textures.Chess {
                         break;
                         case false:
                         valid = false;
-                        if(ui.gamePieces.Index(currentPos).item.modItem is Chess_Piece target && target.White != self.White) {
+                        if(ui.gamePieces.Index(currentPos).item.ModItem is Chess_Piece target && target.White != self.White) {
                             moves.Add(currentPos);
                         }
                         break;
@@ -251,7 +252,7 @@ namespace BoardGames.Textures.Chess {
                         break;
                         case false:
                         valid = false;
-                        if(ui.gamePieces.Index(currentPos).item.modItem is Chess_Piece target && target.White != self.White) {
+                        if(ui.gamePieces.Index(currentPos).item.ModItem is Chess_Piece target && target.White != self.White) {
                             moves.Add(currentPos);
                         }
                         break;
@@ -273,7 +274,7 @@ namespace BoardGames.Textures.Chess {
                         break;
                         case false:
                         valid = false;
-                        if(ui.gamePieces.Index(currentPos).item.modItem is Chess_Piece target && target.White != self.White) {
+                        if(ui.gamePieces.Index(currentPos).item.ModItem is Chess_Piece target && target.White != self.White) {
                             moves.Add(currentPos);
                         }
                         break;
@@ -289,7 +290,7 @@ namespace BoardGames.Textures.Chess {
                 Chess_UI ui = slot.ParentUI as Chess_UI;
                 Point pos = slot.index;
                 List<Point> moves = new List<Point>{};
-                Chess_Piece self = (Chess_Piece)slot.item.modItem;
+                Chess_Piece self = (Chess_Piece)slot.item.ModItem;
                 int X = pos.X;
                 int Y = pos.Y;
                 for(int y = -1; y < 2; y++) {
@@ -301,7 +302,7 @@ namespace BoardGames.Textures.Chess {
                             moves.Add(new Point(X + x*2, Y + y));
                             break;
                             case false:
-                            if(ui.gamePieces[X + x*2, Y + y].item.modItem is Chess_Piece target && target.White != self.White) {
+                            if(ui.gamePieces[X + x*2, Y + y].item.ModItem is Chess_Piece target && target.White != self.White) {
                                 moves.Add(new Point(X + x*2, Y + y));
                             }
                             break;
@@ -311,7 +312,7 @@ namespace BoardGames.Textures.Chess {
                             moves.Add(new Point(X + x, Y + y*2));
                             break;
                             case false:
-                            if(ui.gamePieces[X + x, Y + y*2].item.modItem is Chess_Piece target && target.White != self.White) {
+                            if(ui.gamePieces[X + x, Y + y*2].item.ModItem is Chess_Piece target && target.White != self.White) {
                                 moves.Add(new Point(X + x, Y + y*2));
                             }
                             break;
@@ -324,7 +325,7 @@ namespace BoardGames.Textures.Chess {
                 Chess_UI ui = slot.ParentUI as Chess_UI;
                 Point pos = slot.index;
                 List<Point> moves = new List<Point>{};
-                Chess_Piece self = (Chess_Piece)slot.item.modItem;
+                Chess_Piece self = (Chess_Piece)slot.item.ModItem;
                 #region up
                 bool valid = true;
                 Point currentPos = pos;
@@ -336,7 +337,7 @@ namespace BoardGames.Textures.Chess {
                         break;
                         case false:
                         valid = false;
-                        if(ui.gamePieces.Index(currentPos).item.modItem is Chess_Piece target && target.White != self.White) {
+                        if(ui.gamePieces.Index(currentPos).item.ModItem is Chess_Piece target && target.White != self.White) {
                             moves.Add(currentPos);
                         }
                         break;
@@ -357,7 +358,7 @@ namespace BoardGames.Textures.Chess {
                         break;
                         case false:
                         valid = false;
-                        if(ui.gamePieces.Index(currentPos).item.modItem is Chess_Piece target && target.White != self.White) {
+                        if(ui.gamePieces.Index(currentPos).item.ModItem is Chess_Piece target && target.White != self.White) {
                             moves.Add(currentPos);
                         }
                         break;
@@ -378,7 +379,7 @@ namespace BoardGames.Textures.Chess {
                         break;
                         case false:
                         valid = false;
-                        if(ui.gamePieces.Index(currentPos).item.modItem is Chess_Piece target && target.White != self.White) {
+                        if(ui.gamePieces.Index(currentPos).item.ModItem is Chess_Piece target && target.White != self.White) {
                             moves.Add(currentPos);
                         }
                         break;
@@ -399,7 +400,7 @@ namespace BoardGames.Textures.Chess {
                         break;
                         case false:
                         valid = false;
-                        if(ui.gamePieces.Index(currentPos).item.modItem is Chess_Piece target && target.White != self.White) {
+                        if(ui.gamePieces.Index(currentPos).item.ModItem is Chess_Piece target && target.White != self.White) {
                             moves.Add(currentPos);
                         }
                         break;
@@ -421,7 +422,7 @@ namespace BoardGames.Textures.Chess {
                         break;
                         case false:
                         valid = false;
-                        if(ui.gamePieces.Index(currentPos).item.modItem is Chess_Piece target && target.White != self.White) {
+                        if(ui.gamePieces.Index(currentPos).item.ModItem is Chess_Piece target && target.White != self.White) {
                             moves.Add(currentPos);
                         }
                         break;
@@ -443,7 +444,7 @@ namespace BoardGames.Textures.Chess {
                         break;
                         case false:
                         valid = false;
-                        if(ui.gamePieces.Index(currentPos).item.modItem is Chess_Piece target && target.White != self.White) {
+                        if(ui.gamePieces.Index(currentPos).item.ModItem is Chess_Piece target && target.White != self.White) {
                             moves.Add(currentPos);
                         }
                         break;
@@ -465,7 +466,7 @@ namespace BoardGames.Textures.Chess {
                         break;
                         case false:
                         valid = false;
-                        if(ui.gamePieces.Index(currentPos).item.modItem is Chess_Piece target && target.White != self.White) {
+                        if(ui.gamePieces.Index(currentPos).item.ModItem is Chess_Piece target && target.White != self.White) {
                             moves.Add(currentPos);
                         }
                         break;
@@ -487,7 +488,7 @@ namespace BoardGames.Textures.Chess {
                         break;
                         case false:
                         valid = false;
-                        if(ui.gamePieces.Index(currentPos).item.modItem is Chess_Piece target && target.White != self.White) {
+                        if(ui.gamePieces.Index(currentPos).item.ModItem is Chess_Piece target && target.White != self.White) {
                             moves.Add(currentPos);
                         }
                         break;
@@ -503,7 +504,7 @@ namespace BoardGames.Textures.Chess {
                 Chess_UI ui = slot.ParentUI as Chess_UI;
                 Point pos = slot.index;
                 List<Point> moves = new List<Point>{};
-                Chess_Piece self = (Chess_Piece)slot.item.modItem;
+                Chess_Piece self = (Chess_Piece)slot.item.ModItem;
                 int X = pos.X;
                 int Y = pos.Y;
                 for(int y = -1; y < 2; y++) {
@@ -513,7 +514,7 @@ namespace BoardGames.Textures.Chess {
                             moves.Add(new Point(X + x, Y + y));
                             break;
                             case false:
-                            if(ui.gamePieces[X + x, Y + y].item.modItem is Chess_Piece target && target.White != self.White) {
+                            if(ui.gamePieces[X + x, Y + y].item.ModItem is Chess_Piece target && target.White != self.White) {
                                 moves.Add(new Point(X + x, Y + y));
                             }
                             break;

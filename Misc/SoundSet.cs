@@ -43,7 +43,7 @@ namespace BoardGames.Misc {
                     var curr = events[index];
                     switch(curr._event) {
                         case PLAY:
-                        sound = Main.PlaySound(new LegacySoundStyle((int)curr.data[0], (int)curr.data[1]));
+                        sound = SoundEngine.PlaySound(new LegacySoundStyle((int)curr.data[0], (int)curr.data[1]));
                         break;
                         case DATA:
                         sound.Pitch = curr.data[0];

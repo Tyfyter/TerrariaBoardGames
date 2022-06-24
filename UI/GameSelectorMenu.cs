@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Terraria;
+using Terraria.Audio;
+using Terraria.GameContent;
 using Terraria.ModLoader;
 using Microsoft.Xna.Framework;
 using Terraria.UI;
@@ -41,15 +43,15 @@ namespace BoardGames.UI {
             try {
                 Games.Add(name.ToLower(), (new string[] {$"Mods.{modOrigin}.{name}.Name",$"Mods.{modOrigin}.{name}.Description"}, ModContent.GetTexture(modOrigin+"/Textures/Icons/"+textureName)) );
             } catch(Exception) {
-                Games.Add(name.ToLower(), (new string[] {$"Mods.{modOrigin}.{name}.Name",$"Mods.{modOrigin}.{name}.Description"}, Main.itemTexture[++emergencyTexutredGames]) );
+                Games.Add(name.ToLower(), (new string[] {$"Mods.{modOrigin}.{name}.Name",$"Mods.{modOrigin}.{name}.Description"}, TextureAssets.Item[++emergencyTexutredGames].Value) );
             }
         }
         public override void OnActivate() {
-		    Main.PlaySound(SoundID.MenuOpen);
+		    SoundEngine.PlaySound(SoundID.MenuOpen);
 		    Main.playerInventory = false;
         }
         public override void OnDeactivate() {
-		    Main.PlaySound(SoundID.MenuClose);
+		    SoundEngine.PlaySound(SoundID.MenuClose);
         }
         public override void OnInitialize() {
             if(!(Elements is null))Elements.Clear();
@@ -101,7 +103,7 @@ namespace BoardGames.UI {
 
             Rectangle labelRect = new Rectangle(dimensions.X, dimensions.Y-(dimensions.Width/10), dimensions.Width, endHeight);
             string labelText = Language.GetTextValue("Mods.BoardGames.GameSelector");
-            ChatManager.DrawColorCodedStringWithShadow(spriteBatch, Main.fontMouseText, labelText, labelRect.Center.ToVector2(), Color.White, 0f, Main.fontMouseText.MeasureString(labelText)*0.5f, Vector2.One);
+            ChatManager.DrawColorCodedStringWithShadow(spriteBatch, FontAssets.MouseText.Value, labelText, labelRect.Center.ToVector2(), Color.White, 0f, FontAssets.MouseText.Value.MeasureString(labelText)*0.5f, Vector2.One);
 
             Rectangle buttonRect = new Rectangle(dimensions.X+(margin/2), dimensions.Y+dimensions.Height-(int)(dimensions.Width*0.165f), dimensions.Width-margin, endHeight);
 
@@ -123,7 +125,7 @@ namespace BoardGames.UI {
             spriteBatch.Draw(BoardGames.ButtonEndTexture, buttonBottomRect, new Rectangle(0,0,26,52), buttonColor, 0, default, SpriteEffects.FlipHorizontally, 0);
 
             string localText = Lang.menu[6].Value;
-            ChatManager.DrawColorCodedStringWithShadow(spriteBatch, Main.fontMouseText, localText, buttonRect.Center.ToVector2()+new Vector2(0,buttonRect.Height*0.15f), buttonColor, 0f, Main.fontMouseText.MeasureString(localText)*0.5f, Vector2.One);
+            ChatManager.DrawColorCodedStringWithShadow(spriteBatch, FontAssets.MouseText.Value, localText, buttonRect.Center.ToVector2()+new Vector2(0,buttonRect.Height*0.15f), buttonColor, 0f, FontAssets.MouseText.Value.MeasureString(localText)*0.5f, Vector2.One);
         }
         protected override void DrawChildren(SpriteBatch spriteBatch) {
             base.DrawChildren(spriteBatch);
@@ -141,7 +143,7 @@ namespace BoardGames.UI {
         }
         protected override void DrawSelf(SpriteBatch spriteBatch) {
             Rectangle dimensions = this.GetDimensions().ToRectangle();
-            spriteBatch.Draw(Main.inventoryBackTexture, dimensions, null, Color.White, 0f, default, default, 0);
+            spriteBatch.Draw(TextureAssets.InventoryBack.Value, dimensions, null, Color.White, 0f, default, default, 0);
             spriteBatch.Draw(texture, dimensions.Center(), null, Color.White, 0, texture.Size()*0.5f,
                 Math.Min((dimensions.Width*0.8f)/texture.Width,(dimensions.Height*0.8f)/texture.Height), SpriteEffects.None, 0);
 
@@ -164,11 +166,11 @@ namespace BoardGames.UI {
 		        mouseY += 6;
 	        }
             Vector2 textSize;
-            textSize = Main.fontMouseText.MeasureString(text)*scale;
+            textSize = FontAssets.MouseText.Value.MeasureString(text)*scale;
             string lastText = "";
             while(textSize.X>maxWidth) {
                 text = text.ReplaceMiddle("<SP>", "\n");
-                textSize = Main.fontMouseText.MeasureString(text)*scale;
+                textSize = FontAssets.MouseText.Value.MeasureString(text)*scale;
                 if(text.Equals(lastText)) {
                     break;
                 }
@@ -182,7 +184,7 @@ namespace BoardGames.UI {
 		    }
 	        float mouseTextColor = Main.mouseTextColor / 255f;
             Color baseColor = new Color(mouseTextColor, mouseTextColor, mouseTextColor, Main.mouseTextColor);
-	        ChatManager.DrawColorCodedStringWithShadow(spriteBatch, Main.fontMouseText, text.Replace("<SP>", ""), new Vector2(mouseX, mouseY)+posOffset, baseColor, 0f, Vector2.Zero, new Vector2(scale));
+	        ChatManager.DrawColorCodedStringWithShadow(spriteBatch, FontAssets.MouseText.Value, text.Replace("<SP>", ""), new Vector2(mouseX, mouseY)+posOffset, baseColor, 0f, Vector2.Zero, new Vector2(scale));
             return new Vector2(0, textSize.Y);
         }
         public static MouseEvent GetClickEvent(string game) {

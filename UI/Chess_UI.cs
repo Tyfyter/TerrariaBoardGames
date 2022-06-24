@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Terraria;
+using Terraria.Audio;
 using Terraria.ModLoader;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -78,9 +79,9 @@ namespace BoardGames.UI {
             }
             if(selectedPiece.HasValue) {
                 GamePieceItemSlot slot = gamePieces.Index(selectedPiece.Value);
-                Chess_Piece piece = slot?.item?.modItem as Chess_Piece;
+                Chess_Piece piece = slot?.item?.ModItem as Chess_Piece;
                 if(!(piece is null)) {
-                    int pieceType = piece.item.type;
+                    int pieceType = piece.Item.type;
                     Point[] moves = new Point[0];
                     int dir = 0;
                     if(gameMode==ONLINE) {
@@ -110,12 +111,12 @@ namespace BoardGames.UI {
             if(selectedPiece.HasValue) {
                 if(SlotEmpty(selectedPiece.Value) ?? true) {
                     selectedPiece = null;
-                } else if((gamePieces.Index(selectedPiece.Value).item.modItem as Chess_Piece)?.White==(currentPlayer==1)) {
+                } else if((gamePieces.Index(selectedPiece.Value).item.ModItem as Chess_Piece)?.White==(currentPlayer==1)) {
                     selectedPiece = null;
                 }
             }
             if(oldSelected != selectedPiece) {
-                Main.PlaySound(new Terraria.Audio.LegacySoundStyle(21, 0, Terraria.Audio.SoundType.Sound), Main.LocalPlayer.MountedCenter).Pitch = 1;
+                SoundEngine.PlaySound(new Terraria.Audio.LegacySoundStyle(21, 0, Terraria.Audio.SoundType.Sound), Main.LocalPlayer.MountedCenter).Pitch = 1;
             }
         }
         public void EndGame(int winner) {
@@ -156,7 +157,7 @@ namespace BoardGames.UI {
         public void HighlightMoves() {
             if(!selectedPiece.HasValue)return;
             GamePieceItemSlot slot = gamePieces.Index(selectedPiece.Value);
-            Chess_Piece piece = slot?.item?.modItem as Chess_Piece;
+            Chess_Piece piece = slot?.item?.ModItem as Chess_Piece;
             if(!(piece is null)) {
                 Point[] moves = new Point[0];
                 if(gameMode==ONLINE) {

@@ -101,7 +101,7 @@ namespace BoardGames.Misc {
 			ItemLoader.DrawHair(drawPlayer, ref drawHair, ref drawAltHair);
 			drawInfo.drawHair = drawHair;
 			drawInfo.drawAltHair = drawAltHair;
-			List<PlayerHeadLayer> drawHeadLayers = PlayerHooks.GetDrawHeadLayers(drawPlayer);
+			List<PlayerHeadLayer> drawHeadLayers = PlayerLoader.GetDrawHeadLayers(drawPlayer);
 			int headLayerIndex = -1;
             DrawData drawData;
 			while (true) {

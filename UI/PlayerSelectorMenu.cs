@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Terraria;
+using Terraria.Audio;
+using Terraria.GameContent;
 using Terraria.ModLoader;
 using Microsoft.Xna.Framework;
 using Terraria.UI;
@@ -25,11 +27,11 @@ namespace BoardGames.UI {
         int AICount;
         int MaxScroll => totalPlayers + AICount - 4;
         public override void OnActivate() {
-		    Main.PlaySound(SoundID.MenuOpen);
+		    SoundEngine.PlaySound(SoundID.MenuOpen);
 		    Main.playerInventory = false;
         }
         public override void OnDeactivate() {
-		    Main.PlaySound(SoundID.MenuClose);
+		    SoundEngine.PlaySound(SoundID.MenuClose);
         }
         public override void OnInitialize() {
             if(!(Elements is null))Elements.Clear();
@@ -136,20 +138,20 @@ namespace BoardGames.UI {
                         break;
                     }
                     spriteBatch.Draw(BoardGames.AIIconTexture, playerRect, playerRect2.Contains(Main.mouseX, Main.mouseY)?Color.White:Color.LightGray);
-	                ChatManager.DrawColorCodedStringWithShadow(spriteBatch, Main.fontMouseText, AIs[(-2)-players[i]].name, new Vector2(playerRect.X+playerRect.Width*1.2f, playerRect.Y+playerRect.Height*0.2f), Color.White, 0f, Vector2.Zero, Vector2.One);
+	                ChatManager.DrawColorCodedStringWithShadow(spriteBatch, FontAssets.MouseText.Value, AIs[(-2)-players[i]].name, new Vector2(playerRect.X+playerRect.Width*1.2f, playerRect.Y+playerRect.Height*0.2f), Color.White, 0f, Vector2.Zero, Vector2.One);
                     playerRect.Y += (int)(slotSize*1.2f);
                     continue;
                 }
                 Color color = playerRect2.Contains(Main.mouseX, Main.mouseY) ? Color.White : Color.LightGray;
-                spriteBatch.Draw(Main.inventoryBackTexture, playerRect, color);
+                spriteBatch.Draw(TextureAssets.InventoryBack.Value, playerRect, color);
                 BoardGameExtensions.DrawPlayerHead(spriteBatch, Main.player[players[i]], playerRect.Center.ToVector2(), color, slotSize/39f);
-	            ChatManager.DrawColorCodedStringWithShadow(spriteBatch, Main.fontMouseText, Main.player[players[i]].name, new Vector2(playerRect.X+playerRect.Width*1.2f, playerRect.Y+playerRect.Height*0.2f), Main.teamColor[Main.player[players[i]].team], 0f, Vector2.Zero, Vector2.One);
+	            ChatManager.DrawColorCodedStringWithShadow(spriteBatch, FontAssets.MouseText.Value, Main.player[players[i]].name, new Vector2(playerRect.X+playerRect.Width*1.2f, playerRect.Y+playerRect.Height*0.2f), Main.teamColor[Main.player[players[i]].team], 0f, Vector2.Zero, Vector2.One);
                 playerRect.Y += (int)(slotSize*1.2f);
             }
 
             Rectangle labelRect = new Rectangle(dimensions.X+(margin/2), dimensions.Y-margin, dimensions.Width-margin, endHeight);
             string labelText = Language.GetTextValue("Mods.BoardGames.PlayerSelector");
-            ChatManager.DrawColorCodedStringWithShadow(spriteBatch, Main.fontMouseText, labelText, labelRect.Center.ToVector2(), Color.White, 0f, Main.fontMouseText.MeasureString(labelText)*0.5f, Vector2.One);
+            ChatManager.DrawColorCodedStringWithShadow(spriteBatch, FontAssets.MouseText.Value, labelText, labelRect.Center.ToVector2(), Color.White, 0f, FontAssets.MouseText.Value.MeasureString(labelText)*0.5f, Vector2.One);
 
             Rectangle buttonRect = new Rectangle(dimensions.X+(margin/2), dimensions.Y+(int)(dimensions.Height*0.89f), (dimensions.Width-margin)-(dimensions.Width/2), endHeight);
 
@@ -171,7 +173,7 @@ namespace BoardGames.UI {
             spriteBatch.Draw(BoardGames.ButtonEndTexture, buttonBottomRect, new Rectangle(0,0,26,52), buttonColor, 0, default, SpriteEffects.FlipHorizontally, 0);
 
             string localText = Language.GetTextValue("Mods.BoardGames.Local");
-            ChatManager.DrawColorCodedStringWithShadow(spriteBatch, Main.fontMouseText, localText, buttonRect.Center.ToVector2()+new Vector2(0,buttonRect.Height*0.15f), buttonColor, 0f, Main.fontMouseText.MeasureString(localText)*0.5f, Vector2.One);
+            ChatManager.DrawColorCodedStringWithShadow(spriteBatch, FontAssets.MouseText.Value, localText, buttonRect.Center.ToVector2()+new Vector2(0,buttonRect.Height*0.15f), buttonColor, 0f, FontAssets.MouseText.Value.MeasureString(localText)*0.5f, Vector2.One);
 
             buttonRect.X += dimensions.Width / 2;
 
@@ -193,7 +195,7 @@ namespace BoardGames.UI {
             spriteBatch.Draw(BoardGames.ButtonEndTexture, buttonBottomRect, new Rectangle(0,0,26,52), buttonColor, 0, default, SpriteEffects.FlipHorizontally, 0);
 
             localText = Lang.menu[5].Value;
-            ChatManager.DrawColorCodedStringWithShadow(spriteBatch, Main.fontMouseText, localText, buttonRect.Center.ToVector2()+new Vector2(0,buttonRect.Height*0.15f), buttonColor, 0f, Main.fontMouseText.MeasureString(localText)*0.5f, Vector2.One);
+            ChatManager.DrawColorCodedStringWithShadow(spriteBatch, FontAssets.MouseText.Value, localText, buttonRect.Center.ToVector2()+new Vector2(0,buttonRect.Height*0.15f), buttonColor, 0f, FontAssets.MouseText.Value.MeasureString(localText)*0.5f, Vector2.One);
         }
     }
 }
