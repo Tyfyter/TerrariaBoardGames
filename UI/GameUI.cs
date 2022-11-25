@@ -14,6 +14,7 @@ using static BoardGames.UI.GameMode;
 using BoardGames.Textures.Pieces;
 using Terraria.Utilities;
 using System.Runtime.CompilerServices;
+using BoardGames.Misc;
 
 namespace BoardGames.UI {
 	public abstract class GameUI : UIState {
@@ -65,7 +66,7 @@ namespace BoardGames.UI {
             }
         }
 
-        protected GamePieceItemSlot AddSlot(Item item, Vector2 position, Texture2D texture, bool usePercent = false, float slotScale = 1f, Action<Point> HighlightMoves = null) {
+        protected GamePieceItemSlot AddSlot(Item item, Vector2 position, AutoCastingAsset<Texture2D> texture, bool usePercent = false, float slotScale = 1f, Action<Point> HighlightMoves = null) {
             GamePieceItemSlot itemSlot = new GamePieceItemSlot(texture, slotScale, item) {
                 HighlightMoves = HighlightMoves
             };

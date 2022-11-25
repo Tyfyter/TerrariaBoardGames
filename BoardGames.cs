@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Terraria;
+using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.Localization;
 using Terraria.ModLoader;
@@ -379,7 +380,7 @@ namespace BoardGames {
                 BoardGames.Instance.UI.SetState(null);
             }
         }
-    }
+	}
     public static class PacketType {
         public const byte SelectTile = 0;
         public const byte StartupSync = 1;

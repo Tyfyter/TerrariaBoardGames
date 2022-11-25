@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Terraria;
 using Terraria.Audio;
+using Terraria.ID;
 using Terraria.Social;
 using static BoardGames.Misc.SoundSetEvent;
 
@@ -16,12 +17,12 @@ namespace BoardGames.Misc {
             get {
                 List<(SoundSetEvent, object)> events = new List<(SoundSetEvent, object)> { };
                 float force = Main.rand.NextFloat(16, 24);
-                events.Add((PLAY, new float[] {21, 0}));
-                events.Add((DATA, new float[] {0.5f, force/24f}));
+                events.Add((PLAY, SoundID.Tink.WithPitchOffset(0.5f).WithVolumeScale(force / 24f)));
+                //events.Add((DATA, new float[] {0.5f, force/24f}));
                 while(force>2) {
-                    events.Add((WAIT, new float[] {force/2}));
-                    events.Add((PLAY, new float[] {21, 0}));
-                    events.Add((DATA, new float[] {0.5f, force/24f}));
+                    events.Add((WAIT, force/2));
+                    events.Add((PLAY, SoundID.Tink.WithPitchOffset(0.5f).WithVolumeScale(force / 24f)));
+                    //events.Add((DATA, new float[] {0.5f, force/24f}));
                     force *= Main.rand.NextFloat(0.35f, 1);
                 }
                 return new SoundSet(events.ToArray());
@@ -46,7 +47,7 @@ namespace BoardGames.Misc {
                         latest = SoundEngine.PlaySound(style:(SoundStyle)curr.data);
                         break;
                         case WAIT:
-                        delay = (int)curr.data;
+                        delay = (int)(float)curr.data;
                         break;
                     }
                     index++;

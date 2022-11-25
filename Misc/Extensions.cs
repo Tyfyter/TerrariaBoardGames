@@ -19,12 +19,7 @@ using Terraria.UI.Chat;
 using System.Collections;
 
 namespace BoardGames.Misc {
-	public interface IChatLine {
-		public string OriginalText { get; set; }
-		public Color color { get; set; }
-		public TextSnippet[] parsedText { get; set; }
-	}
-	public class ChatMessageContainerLine : IChatLine {
+	public class ChatMessageContainerLine {
         internal static FieldInfo _color;
         internal static FieldInfo _parsedText;
         public string OriginalText {
@@ -35,8 +30,8 @@ namespace BoardGames.Misc {
             get => (Color)_color.GetValue(chatMessageContainer);
             set => _color.SetValue(chatMessageContainer, value);
         }
-        public TextSnippet[] parsedText {
-            get => (TextSnippet[])_parsedText.GetValue(chatMessageContainer);
+        public List<TextSnippet[]> parsedText {
+            get => ((List<TextSnippet[]>)_parsedText.GetValue(chatMessageContainer));
             set => _parsedText.SetValue(chatMessageContainer, value);
         }
         ChatMessageContainer chatMessageContainer;
@@ -51,9 +46,9 @@ namespace BoardGames.Misc {
 		public T Value => asset.Value;
 
 		readonly Asset<T> asset;
-		AutoCastingAsset(Asset<T> asset) {
-			this.asset = asset;
-		}
+        AutoCastingAsset(Asset<T> asset) {
+            this.asset = asset;
+        }
 		public static implicit operator AutoCastingAsset<T>(Asset<T> asset) => new(asset);
 		public static implicit operator T(AutoCastingAsset<T> asset) => asset.Value;
 	}
@@ -118,12 +113,41 @@ namespace BoardGames.Misc {
                 list[n] = value;
             }
         }
-    }
-    public class Reflected {
-        public static void Load() {
-            BoardGameExtensions._messages = typeof(RemadeChatMonitor).GetField("_messages", BindingFlags.NonPublic | BindingFlags.Instance);
+        public static void DrawPlayerHead(Player drawPlayer, Vector2 position, Color color = default, float Scale = 1f) {
+            position += Main.screenPosition;
+            PlayerDrawSet drawinfo = default(PlayerDrawSet);
+            List<DrawData> drawData = new List<DrawData>();
+            drawPlayer.chatOverhead.NewMessage(drawPlayer.HeightMapOffset+"", 5);
+            drawPlayer.bodyFrame.Y = 0;
+            drawinfo.HeadOnlySetup(drawPlayer, drawData, new List<int>(), new List<int>(), position.X, position.Y, 1f, Scale);
+            drawinfo.playerEffect = SpriteEffects.None;
+            drawinfo.colorArmorHead = drawinfo.colorArmorHead.MultiplyRGB(color);
+            drawinfo.colorHair = drawinfo.colorHair.MultiplyRGB(color);
+            drawinfo.colorHead = drawinfo.colorHead.MultiplyRGB(color);
+            drawinfo.colorEyeWhites = drawinfo.colorEyeWhites.MultiplyRGB(color);
+            drawinfo.colorEyes = drawinfo.colorEyes.MultiplyRGB(color);
+            PlayerLoader.ModifyDrawInfo(ref drawinfo);
+            PlayerDrawLayer[] drawLayers = PlayerDrawLayerLoader.GetDrawLayers(drawinfo);
+            foreach (PlayerDrawLayer layer in drawLayers) {
+                if (layer.IsHeadLayer) {
+                    layer.DrawWithTransformationAndChildren(ref drawinfo);
+                }
+            }
+            var a = drawPlayer.mount;
+            //PlayerDrawLayers.DrawPlayer_TransformDrawData(ref drawinfo);
+            if (Scale != 1f) {
+                PlayerDrawLayers.DrawPlayer_ScaleDrawData(ref drawinfo, Scale);
+            }
+            PlayerDrawLayers.DrawPlayer_RenderAllLayers(ref drawinfo);
         }
-        public static void Unload() {
+    }
+    public class Reflected : ILoadable {
+        public void Load(Mod mod) {
+            BoardGameExtensions._messages = typeof(RemadeChatMonitor).GetField("_messages", BindingFlags.NonPublic | BindingFlags.Instance);
+            ChatMessageContainerLine._color = typeof(ChatMessageContainer).GetField("_color", BindingFlags.NonPublic | BindingFlags.Instance);
+            ChatMessageContainerLine._parsedText = typeof(ChatMessageContainer).GetField("_parsedText", BindingFlags.NonPublic | BindingFlags.Instance);
+        }
+        public void Unload() {
             BoardGameExtensions._messages = null;
             ChatMessageContainerLine._color = null;
             ChatMessageContainerLine._parsedText = null;

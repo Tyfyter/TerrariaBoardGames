@@ -135,17 +135,17 @@ namespace BoardGames.UI {
         }
     }
     public class GameSelectorItem : UIElement {
-        public readonly Texture2D texture;
+        public readonly AutoCastingAsset<Texture2D> texture;
         public readonly string[] text;
-        public GameSelectorItem(Texture2D texture, params string[] text) : base() {
+        public GameSelectorItem(AutoCastingAsset<Texture2D> texture, params string[] text) : base() {
             this.texture = texture;
             this.text = text;
         }
         protected override void DrawSelf(SpriteBatch spriteBatch) {
             Rectangle dimensions = this.GetDimensions().ToRectangle();
             spriteBatch.Draw(TextureAssets.InventoryBack.Value, dimensions, null, Color.White, 0f, default, default, 0);
-            spriteBatch.Draw(texture, dimensions.Center(), null, Color.White, 0, texture.Size()*0.5f,
-                Math.Min((dimensions.Width*0.8f)/texture.Width,(dimensions.Height*0.8f)/texture.Height), SpriteEffects.None, 0);
+            spriteBatch.Draw(texture, dimensions.Center(), null, Color.White, 0, texture.Value.Size()*0.5f,
+                Math.Min((dimensions.Width*0.8f)/texture.Value.Width,(dimensions.Height*0.8f)/texture.Value.Height), SpriteEffects.None, 0);
 
         }
         protected internal void PostDrawSiblings(SpriteBatch spriteBatch) {

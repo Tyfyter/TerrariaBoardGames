@@ -37,7 +37,7 @@ namespace BoardGames.UI {
                 {'n','n'}
             };
         public static void LoadTextures() {
-            if(!RosetteTexture.HasValue) return;
+            if(RosetteTexture.HasValue) return;
             RosetteTexture = ModContent.Request<Texture2D>("BoardGames/Textures/Ur_Rosette");
             OtherTextures = new AutoCastingAsset<Texture2D>[] {
                 ModContent.Request<Texture2D>("BoardGames/Textures/Ur_Base"),
@@ -465,7 +465,7 @@ namespace BoardGames.UI {
                 }
             }
         }
-        public static Texture2D GetTexture(char type) {
+        public static AutoCastingAsset<Texture2D> GetTexture(char type) {
             switch(type) {
                 case 'r':
                 return RosetteTexture;

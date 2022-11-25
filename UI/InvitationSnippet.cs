@@ -26,7 +26,7 @@ namespace BoardGames.UI {
             }
 
             public override void OnClick() {
-                foreach(ChatMessageContainerLine chatLine in (Main.chatMonitor as RemadeChatMonitor).GetChatLines().Where(line => line.parsedText.Contains(this))) {
+                foreach(ChatMessageContainerLine chatLine in (Main.chatMonitor as RemadeChatMonitor).GetChatLines().Where(line => line.parsedText.Any(v => v.Contains(this)))) {
                     chatLine.SetContents(
                         "You have " + (accept ? "accepted" : "declined") + " an invitation to play " + game + " from " + Main.player[sender].name,
                         chatLine.color = accept ? Color.Green : Color.Red
@@ -44,10 +44,10 @@ namespace BoardGames.UI {
             }
             public override void OnHover() {
                 if(DateTime.Now > timestamp.AddMinutes(5)) {
-                    foreach(IChatLine chatLine in (Main.chatMonitor as RemadeChatMonitor).GetChatLines().Where(line => line.parsedText.Contains(this))) {
+                    foreach (ChatMessageContainerLine chatLine in (Main.chatMonitor as RemadeChatMonitor).GetChatLines().Where(line => line.parsedText.Any(v => v.Contains(this)))) {
                         chatLine.OriginalText = "invitation timed out";
                         chatLine.color = Color.Yellow;
-                        chatLine.parsedText = ChatManager.ParseMessage(chatLine.OriginalText, chatLine.color).ToArray();
+                        chatLine.parsedText = new List<TextSnippet[]>{ChatManager.ParseMessage(chatLine.OriginalText, chatLine.color).ToArray()};
                     }
                 }
             }
