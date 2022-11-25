@@ -25,10 +25,10 @@ namespace BoardGames {
         [DefaultValue(RequestEnum.NotBlocked)]
         [JsonConverter(typeof(StringEnumConverter), true)]
         //[LabelSeparator(" ")]
-        [CustomModConfigItem(typeof(AutospacedEnumElement))]
+        //[CustomModConfigItem(typeof(AutospacedEnumElement))]
         public RequestEnum RequestsFrom;
     }
-    public class AutospacedEnumElement : RangeElement {
+    /*public class AutospacedEnumElement : RangeElement {
         private Func<object> _GetValue;
 	    private Func<object> _GetValueString;
 	    private Func<int> _GetIndex;
@@ -73,7 +73,7 @@ namespace BoardGames {
 			    TextDisplayFunction = (() => labelAttribute.Label + labelSeparator + _GetValueString()?.ToString());
 		    }
 	    }
-    }
+    }*/
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Field)]
     public class LabelSeparatorAttribute : Attribute {
 	    public string separator;

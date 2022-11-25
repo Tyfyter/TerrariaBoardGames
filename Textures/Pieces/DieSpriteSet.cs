@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using BoardGames.Misc;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,16 +11,16 @@ using Terraria.Utilities;
 
 namespace BoardGames.Textures.Pieces {
     public class DieSpriteSet {
-        public Texture2D BaseTexture { get; private set; }
-        public Texture2D[] LayerTextures { get; private set; }
+        public AutoCastingAsset<Texture2D> BaseTexture { get; private set; }
+        public AutoCastingAsset<Texture2D>[] LayerTextures { get; private set; }
         int _endIndex;
         int _startIndex;
         public DieSpriteSet(string baseTexture, int endIndex, int startIndex = 0) {
-            BaseTexture = ModContent.GetTexture(baseTexture);
+            BaseTexture = ModContent.Request<Texture2D>(baseTexture);
             endIndex++;
-            LayerTextures = new Texture2D[endIndex-startIndex];
+            LayerTextures = new AutoCastingAsset<Texture2D>[endIndex-startIndex];
             for(int i = startIndex; i < endIndex; i++) {
-                LayerTextures[i - startIndex] = ModContent.GetTexture(baseTexture+"_Tip_"+i);
+                LayerTextures[i - startIndex] = ModContent.Request<Texture2D>(baseTexture+"_Tip_"+i);
             }
             _startIndex = startIndex;
             _endIndex = endIndex;

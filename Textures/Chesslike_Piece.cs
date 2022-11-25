@@ -9,14 +9,12 @@ using Microsoft.Xna.Framework;
 using BoardGames.UI;
 
 namespace BoardGames.Textures {
+    [Autoload(false)]
     public class Chesslike_Piece : ModItem {
-        public override bool CloneNewInstances => true;
+        protected override bool CloneNewInstances => true;
         public bool PlayerOne { get; internal set; }
         public bool Vital { get; internal set; }
         public Chesslike_Move[] Moveset { get; private set; }
-        public override bool Autoload(ref string name) {
-            return false;
-        }
         public Chesslike_Piece(Chesslike_Move[] moveset, bool playerOne) : base() {
             Moveset = moveset;
             PlayerOne = playerOne;

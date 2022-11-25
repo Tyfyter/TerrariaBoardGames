@@ -12,13 +12,17 @@ using BoardGames.Textures.Chess;
 using static BoardGames.UI.GameMode;
 using BoardGames.Misc;
 using BoardGames.Textures;
+using Terraria.ID;
 
 namespace BoardGames.UI {
     public class Chesslike_UI : GameUI {
         public override void TryLoadTextures() => LoadTextures();
-        public static Texture2D[] BoardTextures { get; private set; }
+        public static AutoCastingAsset<Texture2D>[] BoardTextures { get; private set; }
         public static void LoadTextures() {
-            BoardTextures = new Texture2D[] { ModContent.GetTexture("BoardGames/Textures/Chess/Tile_White"), ModContent.GetTexture("BoardGames/Textures/Chess/Tile_Black") };
+            BoardTextures = new AutoCastingAsset<Texture2D>[] {
+                ModContent.Request<Texture2D>("BoardGames/Textures/Chess/Tile_White"),
+                ModContent.Request<Texture2D>("BoardGames/Textures/Chess/Tile_Black")
+            };
             BoardGames.UnloadTextures += UnloadTextures;
         }
         public static void UnloadTextures() {
@@ -130,7 +134,7 @@ namespace BoardGames.UI {
                 }
             }
             if(oldSelected != selectedPiece) {
-                SoundEngine.PlaySound(new Terraria.Audio.LegacySoundStyle(21, 0, Terraria.Audio.SoundType.Sound), Main.LocalPlayer.MountedCenter).Pitch = 1;
+                SoundEngine.PlaySound(SoundID.Tink.WithPitchOffset(1f), Main.LocalPlayer.MountedCenter);
             }
         }
         public void EndGame(int winner) {

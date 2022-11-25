@@ -15,6 +15,7 @@ using Terraria.UI.Chat;
 using BoardGames.Misc;
 using Terraria.GameInput;
 using Terraria.Localization;
+using Terraria.Graphics.Renderers;
 
 namespace BoardGames.UI {
     public class PlayerSelectorMenu : UIState {
@@ -52,8 +53,8 @@ namespace BoardGames.UI {
             int index = 0;
             int scrolled = scroll;
             for(int i = 0; i < Main.maxPlayers; i++) {
-                if(i!=Main.myPlayer&&Main.player[i].active) {
-                    if(scrolled==0) {
+                if(Main.player[i].active) {//i!=Main.myPlayer&&
+                    if (scrolled==0) {
                         if(index<maxPlayers)players[index] = i;
                         index++;
                     } else {
@@ -143,8 +144,8 @@ namespace BoardGames.UI {
                     continue;
                 }
                 Color color = playerRect2.Contains(Main.mouseX, Main.mouseY) ? Color.White : Color.LightGray;
-                spriteBatch.Draw(TextureAssets.InventoryBack.Value, playerRect, color);
-                BoardGameExtensions.DrawPlayerHead(spriteBatch, Main.player[players[i]], playerRect.Center.ToVector2(), color, slotSize/39f);
+                spriteBatch.Draw(TextureAssets.InventoryBack.Value, playerRect, color);//, color
+                Main.PlayerRenderer.DrawPlayerHead(Main.Camera, Main.player[players[i]], playerRect.Center.ToVector2(), scale:slotSize/39f, borderColor:Color.Transparent);
 	            ChatManager.DrawColorCodedStringWithShadow(spriteBatch, FontAssets.MouseText.Value, Main.player[players[i]].name, new Vector2(playerRect.X+playerRect.Width*1.2f, playerRect.Y+playerRect.Height*0.2f), Main.teamColor[Main.player[players[i]].team], 0f, Vector2.Zero, Vector2.One);
                 playerRect.Y += (int)(slotSize*1.2f);
             }

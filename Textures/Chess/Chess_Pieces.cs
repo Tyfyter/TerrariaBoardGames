@@ -11,11 +11,15 @@ using Terraria.ID;
 using BoardGames.UI;
 using System.Text.RegularExpressions;
 using BoardGames.Misc;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace BoardGames.Textures.Chess {
+    [Autoload(false)]
     public class Chess_Piece : ModItem {
-        public override bool CloneNewInstances => true;
-        public static string[] PieceNames => new string[]{"Pawn","Rook","Bishop","Knight","Queen","King"};
+        protected override bool CloneNewInstances => true;
+        string name;
+		public override string Name => name;
+		public static string[] PieceNames => new string[]{"Pawn","Rook","Bishop","Knight","Queen","King"};
         public static int White_Pawn   => Pieces[0];
         public static int Black_Pawn   => Pieces[1];
         public static int White_Rook   => Pieces[2];
@@ -31,14 +35,11 @@ namespace BoardGames.Textures.Chess {
         public static int[] Pieces { get; internal set; }
         public bool White { get; internal set; }
         public Func<GamePieceItemSlot, int, Point[]> GetMoves { get; private set; }
-        public override bool Autoload(ref string name) {
-            return false;
-        }
 		public override void AutoStaticDefaults() {
             try {
-                TextureAssets.Item[Item.type].Value = ModContent.GetTexture("BoardGames/Textures/Chess/"+Name);
+                TextureAssets.Item[Item.type] = ModContent.Request<Texture2D>("BoardGames/Textures/Chess/" + Name);
             } catch(Exception) {
-                TextureAssets.Item[Item.type].Value = ModContent.GetTexture("BoardGames/Textures/Chess/"+(White?"White":"Black")+"_Pawn");
+                TextureAssets.Item[Item.type] = ModContent.Request<Texture2D>("BoardGames/Textures/Chess/" + (White?"White":"Black") + "_Pawn");
             }
 			if (DisplayName.IsDefault())DisplayName.SetDefault(Name.Replace('_',' ').Trim());
 		}
@@ -50,11 +51,13 @@ namespace BoardGames.Textures.Chess {
                 }
             }
         }
-        public Chess_Piece(Func<GamePieceItemSlot, int, Point[]> getMoves, bool white) : base() {
+        public Chess_Piece(string name, Func<GamePieceItemSlot, int, Point[]> getMoves, bool white) : base() {
+            this.name = name;
             GetMoves = getMoves;
             this.White = white;
         }
         public Chess_Piece() : base() {
+            name = "White_Pawn";
             GetMoves = Moves.Pawn;
             White = true;
         }

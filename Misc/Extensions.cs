@@ -13,9 +13,55 @@ using Terraria.Graphics.Shaders;
 using Terraria.ModLoader;
 using Terraria.ID;
 using Terraria.Utilities;
+using ReLogic.Content;
+using Terraria.GameContent.UI.Chat;
+using Terraria.UI.Chat;
+using System.Collections;
 
 namespace BoardGames.Misc {
-    public static class BoardGameExtensions {
+	public interface IChatLine {
+		public string OriginalText { get; set; }
+		public Color color { get; set; }
+		public TextSnippet[] parsedText { get; set; }
+	}
+	public class ChatMessageContainerLine : IChatLine {
+        internal static FieldInfo _color;
+        internal static FieldInfo _parsedText;
+        public string OriginalText {
+            get => chatMessageContainer.OriginalText;
+            set => chatMessageContainer.OriginalText = value;
+        }
+        public Color color {
+            get => (Color)_color.GetValue(chatMessageContainer);
+            set => _color.SetValue(chatMessageContainer, value);
+        }
+        public TextSnippet[] parsedText {
+            get => (TextSnippet[])_parsedText.GetValue(chatMessageContainer);
+            set => _parsedText.SetValue(chatMessageContainer, value);
+        }
+        ChatMessageContainer chatMessageContainer;
+		public ChatMessageContainerLine(ChatMessageContainer chatMessageContainer) {
+			this.chatMessageContainer = chatMessageContainer;
+		}
+		public void SetContents(string text, Color color, int widthLimitInPixels = -1) => chatMessageContainer.SetContents(text, color, widthLimitInPixels);
+	}
+	public struct AutoCastingAsset<T> where T : class {
+		public bool HasValue => asset is not null;
+		public bool IsLoaded => asset?.IsLoaded ?? false;
+		public T Value => asset.Value;
+
+		readonly Asset<T> asset;
+		AutoCastingAsset(Asset<T> asset) {
+			this.asset = asset;
+		}
+		public static implicit operator AutoCastingAsset<T>(Asset<T> asset) => new(asset);
+		public static implicit operator T(AutoCastingAsset<T> asset) => asset.Value;
+	}
+	public static class BoardGameExtensions {
+		internal static FieldInfo _messages;
+		public static List<ChatMessageContainerLine> GetChatLines(this RemadeChatMonitor chatMonitor) {
+			return ((List<ChatMessageContainer>)_messages.GetValue(chatMonitor)).Select(v => new ChatMessageContainerLine(v)).ToList();
+        }
         public static T Index<T>(this T[,] array, Point index) {
             return array[index.X, index.Y];
         }
@@ -42,140 +88,7 @@ namespace BoardGames.Misc {
             }
             return result.ToArray();
         }
-        public static void DrawPlayerHead(SpriteBatch spriteBatch, Player drawPlayer, Vector2 position, Color color = default, float Scale = 1f) {
-			PlayerHeadDrawInfo drawInfo = default(PlayerHeadDrawInfo);
-			drawInfo.spriteBatch = spriteBatch;
-			drawInfo.drawPlayer = drawPlayer;
-			drawInfo.alpha = 1f;
-			drawInfo.scale = Scale;
-			int helmetDye = 0;
-			int skinVariant = drawPlayer.skinVariant;
-			short hairDye = drawPlayer.hairDye;
-			if (drawPlayer.head == 0 && hairDye == 0) {
-				hairDye = 1;
-			}
-            Rectangle bodyFrame = new Rectangle(0, 0, 40, 56);
-			drawInfo.hairShader = hairDye;
-			for (int i = 0; i < 16 + drawPlayer.extraAccessorySlots * 2; i++) {
-				int num3 = i % 10;
-				if (drawPlayer.dye[num3] != null && drawPlayer.armor[i].type > ItemID.None && drawPlayer.armor[i].stack > 0 && drawPlayer.armor[i].faceSlot > 0) {
-					_ = drawPlayer.dye[num3].dye;
-				}
-			}
-			if (drawPlayer.face > 0 && drawPlayer.face < 9) {
-				if (!Main.accFaceLoaded[drawPlayer.face]) {
-		            Main.accFaceTexture[drawPlayer.face] = Main.instance.OurLoad<Texture2D>("Images/Acc_Face_" + drawPlayer.face.ToString());
-		            Main.accFaceLoaded[drawPlayer.face] = true;
-	            }
-			}
-			if (drawPlayer.dye[0] != null) {
-				helmetDye = drawPlayer.dye[0].dye;
-			}
-			drawInfo.armorShader = helmetDye;
-	        if (!Main.hairLoaded[drawPlayer.hair]) {
-		        Main.playerHairTexture[drawPlayer.hair] = Main.instance.OurLoad<Texture2D>("Images" + Path.DirectorySeparatorChar.ToString() + "Player_Hair_" + (drawPlayer.hair + 1).ToString());
-		        Main.playerHairAltTexture[drawPlayer.hair] = Main.instance.OurLoad<Texture2D>("Images" + Path.DirectorySeparatorChar.ToString() + "Player_HairAlt_" + (drawPlayer.hair + 1).ToString());
-		        Main.hairLoaded[drawPlayer.hair] = true;
-	        }
-            Color eyeWhiteColor = drawInfo.eyeWhiteColor = color;
-            Color eyeColor = drawInfo.eyeColor = drawPlayer.eyeColor.MultiplyRGBA(color);
-            Color hairColor = drawInfo.hairColor = drawPlayer.GetHairColor(useLighting: false).MultiplyRGBA(color);
-            Color skinColor = drawInfo.skinColor = drawPlayer.skinColor.MultiplyRGBA(color);
-            Color armorColor = drawInfo.armorColor = color;
-			SpriteEffects spriteEffects = drawInfo.spriteEffects = SpriteEffects.None;
-			Vector2 origin = drawInfo.drawOrigin = new Vector2(drawPlayer.legFrame.Width * 0.5f, drawPlayer.legFrame.Height * 0.35f);
-			if (drawPlayer.head > 0 && drawPlayer.head < 216) {
-                if (!Main.armorHeadLoaded[drawPlayer.head]) {
-		            Main.armorHeadTexture[drawPlayer.head] = Main.instance.OurLoad<Texture2D>("Images" + Path.DirectorySeparatorChar.ToString() + "Armor_Head_" + drawPlayer.head.ToString());
-		            Main.armorHeadLoaded[drawPlayer.head] = true;
-	            }
-			}
-			bool drawHair = false;
-			if (drawPlayer.head == 10 || drawPlayer.head == 12 || drawPlayer.head == 28 || drawPlayer.head == 62 || drawPlayer.head == 97 || drawPlayer.head == 106 || drawPlayer.head == 113 || drawPlayer.head == 116 || drawPlayer.head == 119 || drawPlayer.head == 133 || drawPlayer.head == 138 || drawPlayer.head == 139 || drawPlayer.head == 163 || drawPlayer.head == 178 || drawPlayer.head == 181 || drawPlayer.head == 191 || drawPlayer.head == 198) {
-				drawHair = true;
-			}
-			bool drawAltHair = false;
-			if (drawPlayer.head == 161 || drawPlayer.head == 14 || drawPlayer.head == 15 || drawPlayer.head == 16 || drawPlayer.head == 18 || drawPlayer.head == 21 || drawPlayer.head == 24 || drawPlayer.head == 25 || drawPlayer.head == 26 || drawPlayer.head == 40 || drawPlayer.head == 44 || drawPlayer.head == 51 || drawPlayer.head == 56 || drawPlayer.head == 59 || drawPlayer.head == 60 || drawPlayer.head == 67 || drawPlayer.head == 68 || drawPlayer.head == 69 || drawPlayer.head == 114 || drawPlayer.head == 121 || drawPlayer.head == 126 || drawPlayer.head == 130 || drawPlayer.head == 136 || drawPlayer.head == 140 || drawPlayer.head == 145 || drawPlayer.head == 158 || drawPlayer.head == 159 || drawPlayer.head == 184 || drawPlayer.head == 190 || (double)drawPlayer.head == 92.0 || drawPlayer.head == 195) {
-				drawAltHair = true;
-			}
-			ItemLoader.DrawHair(drawPlayer, ref drawHair, ref drawAltHair);
-			drawInfo.drawHair = drawHair;
-			drawInfo.drawAltHair = drawAltHair;
-			List<PlayerHeadLayer> drawHeadLayers = PlayerLoader.GetDrawHeadLayers(drawPlayer);
-			int headLayerIndex = -1;
-            DrawData drawData;
-			while (true) {
-				headLayerIndex++;
-				if (headLayerIndex >= drawHeadLayers.Count) {
-					break;
-				}
-				if (!drawHeadLayers[headLayerIndex].ShouldDraw(drawHeadLayers)) {
-					continue;
-				}
-				if (drawHeadLayers[headLayerIndex] != PlayerHeadLayer.Head) {
-					if (drawHeadLayers[headLayerIndex] != PlayerHeadLayer.Hair) {
-						if (drawHeadLayers[headLayerIndex] != PlayerHeadLayer.AltHair) {
-							if (drawHeadLayers[headLayerIndex] != PlayerHeadLayer.Armor) {
-								if (drawHeadLayers[headLayerIndex] != PlayerHeadLayer.FaceAcc) {
-									drawHeadLayers[headLayerIndex].Draw(ref drawInfo);
-								} else if (drawPlayer.face > 0) {
-									DrawData value = (drawPlayer.face == 7) ? new DrawData(Main.accFaceTexture[drawPlayer.face], position, bodyFrame, new Color(200, 200, 200, 150), 0f, origin, Scale, spriteEffects, 0) : new DrawData(Main.accFaceTexture[drawPlayer.face], position, bodyFrame, armorColor, 0f, origin, Scale, spriteEffects, 0);
-									GameShaders.Armor.Apply(helmetDye, drawPlayer, value);
-									value.Draw(spriteBatch);
-									Main.pixelShader.CurrentTechnique.Passes[0].Apply();
-								}
-							} else if (drawPlayer.head == 23) {
-								drawData = new DrawData(Main.playerHairTexture[drawPlayer.hair], position, bodyFrame, hairColor, 0f, origin, Scale, spriteEffects, 0);
-								GameShaders.Hair.Apply(hairDye, drawPlayer, drawData);
-								drawData.Draw(spriteBatch);
-								Main.pixelShader.CurrentTechnique.Passes[0].Apply();
-								drawData = new DrawData(Main.armorHeadTexture[drawPlayer.head], position, bodyFrame, armorColor, 0f, origin, Scale, spriteEffects, 0);
-								GameShaders.Armor.Apply(helmetDye, drawPlayer, drawData);
-								drawData.Draw(spriteBatch);
-								Main.pixelShader.CurrentTechnique.Passes[0].Apply();
-							} else if (drawPlayer.head == 14 || drawPlayer.head == 56 || drawPlayer.head == 158) {
-								drawData = new DrawData(Main.armorHeadTexture[drawPlayer.head], position, bodyFrame, armorColor, 0f, origin, Scale, spriteEffects, 0);
-								GameShaders.Armor.Apply(helmetDye, drawPlayer, drawData);
-								drawData.Draw(spriteBatch);
-								Main.pixelShader.CurrentTechnique.Passes[0].Apply();
-							} else if (drawPlayer.head > 0 && drawPlayer.head != 28) {
-								drawData = new DrawData(Main.armorHeadTexture[drawPlayer.head], position, bodyFrame, armorColor, 0f, origin, Scale, spriteEffects, 0);
-								GameShaders.Armor.Apply(helmetDye, drawPlayer, drawData);
-								drawData.Draw(spriteBatch);
-								Main.pixelShader.CurrentTechnique.Passes[0].Apply();
-							} else {
-								drawData = new DrawData(Main.playerHairTexture[drawPlayer.hair], position, bodyFrame, hairColor, 0f, origin, Scale, spriteEffects, 0);
-								GameShaders.Hair.Apply(hairDye, drawPlayer, drawData);
-								drawData.Draw(spriteBatch);
-								Main.pixelShader.CurrentTechnique.Passes[0].Apply();
-							}
-						} else if (drawAltHair) {
-							drawData = new DrawData(Main.playerHairAltTexture[drawPlayer.hair], position, bodyFrame, hairColor, 0f, origin, Scale, spriteEffects, 0);
-							GameShaders.Hair.Apply(hairDye, drawPlayer, drawData);
-							drawData.Draw(spriteBatch);
-							Main.pixelShader.CurrentTechnique.Passes[0].Apply();
-						}
-					} else {
-						if (!drawHair) {
-							continue;
-						}
-						drawData = new DrawData(Main.armorHeadTexture[drawPlayer.head], position, bodyFrame, armorColor, 0f, origin, Scale, spriteEffects, 0);
-						GameShaders.Armor.Apply(helmetDye, drawPlayer, drawData);
-						drawData.Draw(spriteBatch);
-						Main.pixelShader.CurrentTechnique.Passes[0].Apply();
-						drawData = new DrawData(Main.playerHairTexture[drawPlayer.hair], position, bodyFrame, hairColor, 0f, origin, Scale, spriteEffects, 0);
-						GameShaders.Hair.Apply(hairDye, drawPlayer, drawData);
-						drawData.Draw(spriteBatch);
-						Main.pixelShader.CurrentTechnique.Passes[0].Apply();
-					}
-				} else if (drawPlayer.head != 38 && drawPlayer.head != 135 && ItemLoader.DrawHead(drawPlayer)) {
-					spriteBatch.Draw(Main.playerTextures[skinVariant, 0], position, bodyFrame, skinColor, 0f, origin, Scale, spriteEffects, 0f);
-					spriteBatch.Draw(Main.playerTextures[skinVariant, 1], position, bodyFrame, eyeWhiteColor, 0f, origin, Scale, spriteEffects, 0f);
-					spriteBatch.Draw(Main.playerTextures[skinVariant, 2], position, bodyFrame, eyeColor, 0f, origin, Scale, spriteEffects, 0f);
-				}
-			}
-		}
-        public static T Clamp<T>(T value, T min, T max) where T : IComparable<T>{
+		public static T Clamp<T>(T value, T min, T max) where T : IComparable<T>{
             if(value.CompareTo(min)<0) {
                 return min;
             }
@@ -206,12 +119,14 @@ namespace BoardGames.Misc {
             }
         }
     }
-    public static class Reflected {
+    public class Reflected {
         public static void Load() {
-
+            BoardGameExtensions._messages = typeof(RemadeChatMonitor).GetField("_messages", BindingFlags.NonPublic | BindingFlags.Instance);
         }
         public static void Unload() {
-
+            BoardGameExtensions._messages = null;
+            ChatMessageContainerLine._color = null;
+            ChatMessageContainerLine._parsedText = null;
         }
     }
 }

@@ -11,20 +11,21 @@ using Microsoft.Xna.Framework.Graphics;
 using BoardGames.Textures.Chess;
 using static BoardGames.UI.GameMode;
 using BoardGames.Misc;
+using Terraria.ID;
 
 namespace BoardGames.UI {
     public class Checkers_UI : GameUI {
         public override void TryLoadTextures() => LoadTextures();
         public static int[] GamePieceTypes { get; private set; }
-        public static Texture2D[] BoardTextures { get; private set; }
+        public static AutoCastingAsset<Texture2D>[] BoardTextures { get; private set; }
         public static Point NoAttack => new Point(-1,-1);
         public bool mandatoryJumps = false;
         public bool hasJumps = false;
         public bool movedOnce = false;
         public static void LoadTextures() {
-            BoardTextures = new Texture2D[] {
-                ModContent.GetTexture("BoardGames/Textures/Checkers_Tile_Light"),
-                ModContent.GetTexture("BoardGames/Textures/Checkers_Tile_Dark")
+            BoardTextures = new AutoCastingAsset<Texture2D>[] {
+                ModContent.Request<Texture2D>("BoardGames/Textures/Checkers_Tile_Light"),
+                ModContent.Request<Texture2D>("BoardGames/Textures/Checkers_Tile_Dark")
             };
             GamePieceTypes = new int[] {
                 ModContent.ItemType<Textures.Pieces.Black>(),
@@ -127,7 +128,7 @@ namespace BoardGames.UI {
                 }
             }
             if(oldSelected != selectedPiece) {
-                SoundEngine.PlaySound(new Terraria.Audio.LegacySoundStyle(21, 0, Terraria.Audio.SoundType.Sound), Main.LocalPlayer.MountedCenter).Pitch = 0.75f;
+                SoundEngine.PlaySound(SoundID.Tink.WithPitchOffset(0.75f), Main.LocalPlayer.MountedCenter);
             }
         }
         public bool HasMoves() {

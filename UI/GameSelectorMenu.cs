@@ -18,13 +18,13 @@ using Terraria.Localization;
 
 namespace BoardGames.UI {
     public class GameSelectorMenu : UIState {
-        public static Dictionary<string, (string[] text, Texture2D texture)> Games { get; private set; }
+        public static Dictionary<string, (string[] text, AutoCastingAsset<Texture2D> texture)> Games { get; private set; }
         public static event Action AddExternalGames;
-        public static int emergencyTexutredGames;
+        public static int emergencyTexturedGames;
         public float totalHeight;
         public static void LoadTextures() {
             if(!(Games is null)) return;
-            Games = new Dictionary<string, (string[], Texture2D)> {};
+            Games = new Dictionary<string, (string[], AutoCastingAsset<Texture2D>)> {};
             AddGame("Ur");
             AddGame("Chess");
             AddGame("Draughts", textureName:"Checkers");
@@ -41,9 +41,9 @@ namespace BoardGames.UI {
         public static void AddGame(string name, string modOrigin = "BoardGames", string textureName = null) {
             if(textureName is null)textureName = name;
             try {
-                Games.Add(name.ToLower(), (new string[] {$"Mods.{modOrigin}.{name}.Name",$"Mods.{modOrigin}.{name}.Description"}, ModContent.GetTexture(modOrigin+"/Textures/Icons/"+textureName)) );
+                Games.Add(name.ToLower(), (new string[] {$"Mods.{modOrigin}.{name}.Name",$"Mods.{modOrigin}.{name}.Description"}, ModContent.Request<Texture2D>(modOrigin+"/Textures/Icons/"+textureName)) );
             } catch(Exception) {
-                Games.Add(name.ToLower(), (new string[] {$"Mods.{modOrigin}.{name}.Name",$"Mods.{modOrigin}.{name}.Description"}, TextureAssets.Item[++emergencyTexutredGames].Value) );
+                Games.Add(name.ToLower(), (new string[] {$"Mods.{modOrigin}.{name}.Name",$"Mods.{modOrigin}.{name}.Description"}, TextureAssets.Item[++emergencyTexturedGames]) );
             }
         }
         public override void OnActivate() {

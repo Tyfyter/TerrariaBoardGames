@@ -22,12 +22,12 @@ using Terraria.Utilities;
 namespace BoardGames {
 	public class BoardGames : Mod {
         public static BoardGames Instance { get; private set; }
-        public static Texture2D EmptySlotTexture { get; private set; }
-        public static Texture2D SelectorEndTexture { get; private set; }
-        public static Texture2D SelectorMidTexture { get; private set; }
-        public static Texture2D AIIconTexture { get; private set; }
-        public static Texture2D ButtonEndTexture { get; private set; }
-        public static Texture2D ButtonMidTexture { get; private set; }
+        public static AutoCastingAsset<Texture2D> EmptySlotTexture { get; private set; }
+        public static AutoCastingAsset<Texture2D> SelectorEndTexture { get; private set; }
+        public static AutoCastingAsset<Texture2D> SelectorMidTexture { get; private set; }
+        public static AutoCastingAsset<Texture2D> AIIconTexture { get; private set; }
+        public static AutoCastingAsset<Texture2D> ButtonEndTexture { get; private set; }
+        public static AutoCastingAsset<Texture2D> ButtonMidTexture { get; private set; }
         public static event Action UnloadTextures;
 		internal UserInterface UI;
 		public GameUI Game;
@@ -46,16 +46,16 @@ namespace BoardGames {
             sounds = new List<SoundSet> { };
             for(int i = 0; i < 6; i++) {
                 pieceName = chessPieceNames[i];
-                AddItem("White_" + pieceName, new Chess_Piece(Chess_Piece.Moves.FromName(pieceName), true));
-                AddItem("Black_" + pieceName, new Chess_Piece(Chess_Piece.Moves.FromName(pieceName), false));
+                AddContent(new Chess_Piece("White_" + pieceName, Chess_Piece.Moves.FromName(pieceName), true));
+                AddContent(new Chess_Piece("Black_" + pieceName, Chess_Piece.Moves.FromName(pieceName), false));
             }
             if(Main.netMode != NetmodeID.Server) {
-                EmptySlotTexture = ModContent.GetTexture("BoardGames/Textures/Empty");
-                SelectorEndTexture = ModContent.GetTexture("BoardGames/UI/Selector_Back_End");
-                SelectorMidTexture = ModContent.GetTexture("BoardGames/UI/Selector_Back_Mid");
-                AIIconTexture = ModContent.GetTexture("BoardGames/Textures/Icons/AI");
-                ButtonEndTexture = ModContent.GetTexture("BoardGames/UI/Button_Back_End");
-                ButtonMidTexture = ModContent.GetTexture("BoardGames/UI/Button_Back_Mid");
+                EmptySlotTexture = ModContent.Request<Texture2D>("BoardGames/Textures/Empty");
+                SelectorEndTexture = ModContent.Request<Texture2D>("BoardGames/UI/Selector_Back_End");
+                SelectorMidTexture = ModContent.Request<Texture2D>("BoardGames/UI/Selector_Back_Mid");
+                AIIconTexture = ModContent.Request<Texture2D>("BoardGames/Textures/Icons/AI");
+                ButtonEndTexture = ModContent.Request<Texture2D>("BoardGames/UI/Button_Back_End");
+                ButtonMidTexture = ModContent.Request<Texture2D>("BoardGames/UI/Button_Back_Mid");
                 UI = new UserInterface();
             }
             ChatManager.Register<GameInviteTagHandler>(new string[]{
@@ -165,31 +165,6 @@ namespace BoardGames {
             Instance.Menu.Activate();
             Instance.UI.SetState(Instance.Menu);
         }
-		public override void UpdateUI(GameTime gameTime) {
-            if(!(sounds is null)) {
-                for(int i = 0; i < sounds.Count; i++) {
-                    if(sounds[i].Update()){
-                        sounds.RemoveAt(i);
-                        i--;
-                    }
-                }
-            }
-			UI?.Update(gameTime);
-		}
-		public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers) {
-			int inventoryIndex = layers.FindIndex(layer => layer.Name.Equals("Vanilla: Inventory"));
-			if (inventoryIndex != -1) {
-				layers.Insert(inventoryIndex + 1, new LegacyGameInterfaceLayer(
-					"BoardGames: GameUI",
-					delegate {
-						// If the current UIState of the UserInterface is null, nothing will draw. We don't need to track a separate .visible value.
-						UI.Draw(Main.spriteBatch, new GameTime());
-						return true;
-					},
-					InterfaceScaleType.UI)
-				);
-			}
-		}
         public override void HandlePacket(BinaryReader reader, int whoAmI) {
             ModPacket bouncePacket;
             byte packetType = reader.ReadByte();
@@ -365,6 +340,34 @@ namespace BoardGames {
         }
         public static void TestChess() {
             Instance.OpenGame<Chess_UI>();
+        }
+    }
+    public class BoardGameSystem : ModSystem {
+        public override void UpdateUI(GameTime gameTime) {
+            List<SoundSet> sounds = BoardGames.Instance.sounds;
+            if (!(sounds is null)) {
+                for (int i = 0; i < sounds.Count; i++) {
+                    if (sounds[i].Update()) {
+                        sounds.RemoveAt(i);
+                        i--;
+                    }
+                }
+            }
+            BoardGames.Instance.UI?.Update(gameTime);
+        }
+        public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers) {
+            int inventoryIndex = layers.FindIndex(layer => layer.Name.Equals("Vanilla: Inventory"));
+            if (inventoryIndex != -1) {
+                layers.Insert(inventoryIndex + 1, new LegacyGameInterfaceLayer(
+                    "BoardGames: GameUI",
+                    delegate {
+                        // If the current UIState of the UserInterface is null, nothing will draw. We don't need to track a separate .visible value.
+                        BoardGames.Instance.UI.Draw(Main.spriteBatch, new GameTime());
+                        return true;
+                    },
+                    InterfaceScaleType.UI)
+                );
+            }
         }
     }
     public class BoardGamesPlayer : ModPlayer {

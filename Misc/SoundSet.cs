@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework.Audio;
+using ReLogic.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +14,7 @@ namespace BoardGames.Misc {
     public class SoundSet {
         public static SoundSet Dice {
             get {
-                List<(SoundSetEvent, float[])> events = new List<(SoundSetEvent, float[])> { };
+                List<(SoundSetEvent, object)> events = new List<(SoundSetEvent, object)> { };
                 float force = Main.rand.NextFloat(16, 24);
                 events.Add((PLAY, new float[] {21, 0}));
                 events.Add((DATA, new float[] {0.5f, force/24f}));
@@ -26,11 +27,11 @@ namespace BoardGames.Misc {
                 return new SoundSet(events.ToArray());
             }
         }
-        (SoundSetEvent _event, float[] data)[] events;
+        (SoundSetEvent _event, object data)[] events;
         int delay = 0;
         int index = 0;
-        SoundEffectInstance latest;
-        public SoundSet(params (SoundSetEvent, float[])[] events) {
+        SlotId latest;
+        public SoundSet(params (SoundSetEvent, object)[] events) {
             this.events = events;
         }
         public bool Update() {
@@ -38,20 +39,14 @@ namespace BoardGames.Misc {
                 if(delay>0) {
                     delay--;
                 } else {
-                    SoundEffectInstance sound = null;
                     effect:
                     var curr = events[index];
                     switch(curr._event) {
                         case PLAY:
-                        sound = SoundEngine.PlaySound(new LegacySoundStyle((int)curr.data[0], (int)curr.data[1]));
-                        break;
-                        case DATA:
-                        sound.Pitch = curr.data[0];
-                        if(curr.data.Length>1)
-                            sound.Volume*=curr.data[1];
+                        latest = SoundEngine.PlaySound(style:(SoundStyle)curr.data);
                         break;
                         case WAIT:
-                        delay = (int)curr.data[0];
+                        delay = (int)curr.data;
                         break;
                     }
                     index++;

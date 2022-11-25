@@ -12,6 +12,7 @@ using static BoardGames.UI.GameMode;
 using BoardGames.Textures.Pieces;
 using Microsoft.Xna.Framework.Graphics;
 using BoardGames.Misc;
+using Terraria.ID;
 
 namespace BoardGames.UI {
     public class Ur_UI : GameUI {
@@ -36,9 +37,12 @@ namespace BoardGames.UI {
                 {'n','n'}
             };
         public static void LoadTextures() {
-            if(!(RosetteTexture is null)) return;
-            RosetteTexture = ModContent.GetTexture("BoardGames/Textures/Ur_Rosette");
-            OtherTextures = new Texture2D[] { ModContent.GetTexture("BoardGames/Textures/Ur_Base"), ModContent.GetTexture("BoardGames/Textures/Ur_5") };
+            if(!RosetteTexture.HasValue) return;
+            RosetteTexture = ModContent.Request<Texture2D>("BoardGames/Textures/Ur_Rosette");
+            OtherTextures = new AutoCastingAsset<Texture2D>[] {
+                ModContent.Request<Texture2D>("BoardGames/Textures/Ur_Base"),
+                ModContent.Request<Texture2D>("BoardGames/Textures/Ur_5")
+            };
             GamePieceTypes = new int[] {
                 ModContent.ItemType<Textures.Pieces.Red>(),
                 ModContent.ItemType<Textures.Pieces.Blue>()
@@ -55,8 +59,8 @@ namespace BoardGames.UI {
             GamePieceTypes = null;
             DieSet = null;
         }
-        public static Texture2D RosetteTexture { get; private set; }
-        public static Texture2D[] OtherTextures { get; private set; }
+        public static AutoCastingAsset<Texture2D> RosetteTexture { get; private set; }
+        public static AutoCastingAsset<Texture2D>[] OtherTextures { get; private set; }
         protected override void Init(Vector3 scale, Vector2 basePosition, Vector2 slotSize) {
             basePosition = new Vector2((float)(Main.screenWidth * 0.5), (float)(Main.screenHeight * 0.5));
             basePosition -= slotSize * new Vector2(1.5f, 4);
@@ -204,7 +208,7 @@ namespace BoardGames.UI {
                         gamePieces.Index(slotB).SetItem(gamePieces[slotA.X, slotA.Y].item);
                         gamePieces.Index(slotA).SetItem(null);
                     }
-                    SoundEngine.PlaySound(new Terraria.Audio.LegacySoundStyle(21, 0, Terraria.Audio.SoundType.Sound), Main.LocalPlayer.MountedCenter).Pitch=1;
+                    SoundEngine.PlaySound(SoundID.Tink.WithPitchOffset(1), Main.LocalPlayer.MountedCenter);
                     if(Grid[slotB.Y, slotB.X % 2] == 'r') {
                         rolled = false;
                         if(gameMode==AI&&currentPlayer!=0) {

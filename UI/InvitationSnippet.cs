@@ -7,6 +7,8 @@ using Terraria;
 using Terraria.ModLoader;
 using Microsoft.Xna.Framework;
 using Terraria.UI.Chat;
+using BoardGames.Misc;
+using Terraria.GameContent.UI.Chat;
 
 namespace BoardGames.UI {
     public class GameInviteTagHandler : ITagHandler {
@@ -24,10 +26,11 @@ namespace BoardGames.UI {
             }
 
             public override void OnClick() {
-                foreach(ChatLine chatLine in Main.chatLine.Where(line => line.parsedText.Contains(this))) {
-                    chatLine.text = "You have "+(accept?"accepted":"declined") + " an invitation to play "+game+" from " + Main.player[sender].name;
-                    chatLine.color = accept?Color.Green:Color.Red;
-                    chatLine.parsedText = ChatManager.ParseMessage(chatLine.text, chatLine.color).ToArray();
+                foreach(ChatMessageContainerLine chatLine in (Main.chatMonitor as RemadeChatMonitor).GetChatLines().Where(line => line.parsedText.Contains(this))) {
+                    chatLine.SetContents(
+                        "You have " + (accept ? "accepted" : "declined") + " an invitation to play " + game + " from " + Main.player[sender].name,
+                        chatLine.color = accept ? Color.Green : Color.Red
+                    );
                 }
                 if(accept) {
                     BoardGames.OpenGameByName(game, GameMode.ONLINE, sender);
@@ -40,23 +43,21 @@ namespace BoardGames.UI {
                 }
             }
             public override void OnHover() {
-                if(DateTime.Now>timestamp.AddMinutes(5)) {
-                    foreach(ChatLine chatLine in Main.chatLine.Where(line => line.parsedText.Contains(this))) {
-                        chatLine.text = "invitation timed out";
+                if(DateTime.Now > timestamp.AddMinutes(5)) {
+                    foreach(IChatLine chatLine in (Main.chatMonitor as RemadeChatMonitor).GetChatLines().Where(line => line.parsedText.Contains(this))) {
+                        chatLine.OriginalText = "invitation timed out";
                         chatLine.color = Color.Yellow;
-                        chatLine.parsedText = ChatManager.ParseMessage(chatLine.text, chatLine.color).ToArray();
+                        chatLine.parsedText = ChatManager.ParseMessage(chatLine.OriginalText, chatLine.color).ToArray();
                     }
                 }
             }
         }
         public TextSnippet Parse(string text, Color baseColor, string options) {
-            bool accept = true;
-            string game = "";
             string[] array = options.Split(',');
-            accept = array[0]=="a";
-            int.TryParse(array[1], out int sender);
-            game = text;
-		    return new GameInviteSnippet(accept, sender, game) {
+			bool accept = array[0] == "a";
+			if(!int.TryParse(array[1], out int sender))return null;
+			string game = text;
+			return new GameInviteSnippet(accept, sender, game) {
 			    DeleteWhole = true
 		    };
 	    }
