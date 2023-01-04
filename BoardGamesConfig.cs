@@ -16,19 +16,19 @@ using System.Text.RegularExpressions;
 using Terraria.ModLoader.Config.UI;
 
 namespace BoardGames {
-    [Label("Settings")]
-    public class BoardGamesConfig : ModConfig {
-        public static BoardGamesConfig Instance;
-        public override ConfigScope Mode => ConfigScope.ClientSide;
-        [Label("Allow game requests from ")]
-        [DrawTicks]
-        [DefaultValue(RequestEnum.NotBlocked)]
-        [JsonConverter(typeof(StringEnumConverter), true)]
-        //[LabelSeparator(" ")]
-        //[CustomModConfigItem(typeof(AutospacedEnumElement))]
-        public RequestEnum RequestsFrom;
-    }
-    /*public class AutospacedEnumElement : RangeElement {
+	[Label("Settings")]
+	public class BoardGamesConfig : ModConfig {
+		public static BoardGamesConfig Instance;
+		public override ConfigScope Mode => ConfigScope.ClientSide;
+		[Label("Allow game requests from ")]
+		[DrawTicks]
+		[DefaultValue(RequestEnum.NotBlocked)]
+		[JsonConverter(typeof(StringEnumConverter), true)]
+		//[LabelSeparator(" ")]
+		//[CustomModConfigItem(typeof(AutospacedEnumElement))]
+		public RequestEnum RequestsFrom;
+	}
+	/*public class AutospacedEnumElement : RangeElement {
         private Func<object> _GetValue;
 	    private Func<object> _GetValueString;
 	    private Func<int> _GetIndex;
@@ -74,17 +74,17 @@ namespace BoardGames {
 		    }
 	    }
     }*/
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Field)]
-    public class LabelSeparatorAttribute : Attribute {
-	    public string separator;
-	    public LabelSeparatorAttribute(string separator){
-		    this.separator = separator;
-	    }
-    }
-    public enum RequestEnum {
-        Everyone,
-        NotBlocked,
-        FriendsOnly,
-        NoOne
-    }
+	[AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Field)]
+	public class LabelSeparatorAttribute : Attribute {
+		public string separator;
+		public LabelSeparatorAttribute(string separator) {
+			this.separator = separator;
+		}
+	}
+	public enum RequestEnum {
+		Everyone,
+		NotBlocked,
+		FriendsOnly,
+		NoOne
+	}
 }
