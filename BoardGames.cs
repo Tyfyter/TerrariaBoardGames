@@ -37,6 +37,7 @@ namespace BoardGames {
 		public static Dictionary<string, Action<GameMode, int>> ExternalGames { get; private set; }
 		public static MultiDictionary<string, (string name, Action<GameUI> AI)> GameAI { get; private set; }
 		public string selectedGame;
+		public string selectedGameSettings;
 		public const int ai_move_time = 30;
 
 		public override void Load() {
@@ -130,13 +131,14 @@ namespace BoardGames {
 		}
 		public void OpenGame<GameType>(GameMode gameMode = GameMode.LOCAL, int otherPlayer = -1) where GameType : GameUI, new() {
 			Game = new GameType();
-			Game.SetMode(gameMode, otherPlayer);
+			Game.SetMode(gameMode, otherPlayer, null);
 			Game.TryLoadTextures();
 			Game.Activate();
 			UI.SetState(Game);
 		}
-		public static void OpenGameByName(string name, GameMode gameMode = GameMode.LOCAL, int otherPlayer = -1) {
-			switch (name.ToLower()) {
+		public static void OpenGameByName(string name, GameMode gameMode = GameMode.LOCAL, int otherPlayer = -1, string settings = null) {
+			//settings ??= "";
+			/*switch (name.ToLower()) {
 				case "ur":
 				Instance.OpenGame<Ur_UI>(gameMode, otherPlayer);
 				return;
@@ -153,7 +155,12 @@ namespace BoardGames {
 			}
 			if (ExternalGames?.ContainsKey(name) ?? false) {
 				ExternalGames[name](gameMode, otherPlayer);
-			}
+			}*/
+			GameRegistry.GetGameByKey(name).StartGame(gameMode, otherPlayer, settings);
+			//Instance.Game.SetGameSettings(settings);
+		}
+		public static void OpenMenu(UIState menu) {
+			Instance.UI.SetState(Instance.Menu = menu);
 		}
 		public static void OpenGameSelector() {
 			Instance.Menu = new GameSelectorMenu();
@@ -162,7 +169,9 @@ namespace BoardGames {
 			Instance.UI.SetState(Instance.Menu);
 		}
 		public static void OpenPlayerSelector() {
-			Instance.Menu = new PlayerSelectorMenu();
+			Instance.Menu = new PlayerSelectorMenu() {
+				lastMenuState = Instance.Menu as GameSelectorMenu
+			};
 			Instance.Menu.Activate();
 			Instance.UI.SetState(Instance.Menu);
 		}
@@ -186,6 +195,12 @@ namespace BoardGames {
 					bouncePacket.Write(PacketType.StartupSync);
 					bouncePacket.Write(whoAmI);
 					bouncePacket.Write(reader.ReadInt32());
+					if (reader.ReadBoolean()) {
+						bouncePacket.Write(true);
+						bouncePacket.Write(reader.ReadBoolean());
+					} else {
+						bouncePacket.Write(false);
+					}
 					bouncePacket.Send(reader.ReadInt32());
 					break;
 					case PacketType.SyncedSetup:
@@ -208,12 +223,14 @@ namespace BoardGames {
 					bouncePacket.Write(PacketType.RecieveRequest);
 					bouncePacket.Write(whoAmI);
 					bouncePacket.Write(reader.ReadString());
+					bouncePacket.Write(reader.ReadString());
 					bouncePacket.Send(reader.ReadInt32());
 					break;
 					case PacketType.AcceptRequest:
 					bouncePacket = Instance.GetPacket();
 					bouncePacket.Write(PacketType.AcceptRequest);
 					bouncePacket.Write(whoAmI);
+					bouncePacket.Write(reader.ReadString());
 					bouncePacket.Write(reader.ReadString());
 					bouncePacket.Send(reader.ReadInt32());
 					break;
@@ -236,7 +253,8 @@ namespace BoardGames {
 					case PacketType.StartupSync:
 					if (reader.ReadInt32() == Game.otherPlayerId) {
 						GameUI.rand = new UnifiedRandom(reader.ReadInt32());
-						Instance.Game.owner = (Game.otherPlayerId < Main.myPlayer) == GameUI.rand.NextBool() ? 1 : 0;
+						bool? senderFirst = reader.ReadBoolean() ? reader.ReadBoolean() : null;
+						Instance.Game.owner = (Game.otherPlayerId < Main.myPlayer) == (senderFirst ?? GameUI.rand.NextBool()) ? 1 : 0;
 						//Game.gameInactive = false;
 						bouncePacket = Instance.GetPacket(5);
 						bouncePacket.Write(PacketType.SyncedSetup);
@@ -251,12 +269,13 @@ namespace BoardGames {
 					break;
 					case PacketType.RecieveRequest:
 					Main.NewText("recieved game invite packet");
-					RecieveGameRequest(reader.ReadInt32(), reader.ReadString());
+					RecieveGameRequest(reader.ReadInt32(), reader.ReadString(), reader.ReadString());
 					break;
 					case PacketType.AcceptRequest:
 					int otherPlayer = reader.ReadInt32();
 					string game = reader.ReadString();
-					BoardGames.OpenGameByName(game, GameMode.ONLINE, otherPlayer);
+					string settings = reader.ReadString();
+					BoardGames.OpenGameByName(game, GameMode.ONLINE, otherPlayer, settings);
 					break;
 					/*case PacketType.RequestSteamID:
                     int sender = reader.ReadInt32();
@@ -273,16 +292,17 @@ namespace BoardGames {
 				break;
 			}
 		}
-		public static void SendGameRequest(int playerID, string gameName) {
+		public static void SendGameRequest(int playerID, string gameName, string settings = null) {
 			ModPacket packet;
 			packet = Instance.GetPacket();
 			packet.Write(PacketType.RecieveRequest);
 			packet.Write(gameName);
+			packet.Write(settings ?? "");
 			packet.Write(playerID);
 			packet.Send();
 			Main.NewText("sent " + gameName + " invite packet to player" + playerID);
 		}
-		public static async void RecieveGameRequest(int playerID, string gameName) {
+		public static async void RecieveGameRequest(int playerID, string gameName, string settings = null) {
 			CSteamID steamID;
 			EFriendRelationship relationship;
 			try {
@@ -313,7 +333,7 @@ namespace BoardGames {
 				}
 				break;
 			}
-			Main.NewText(Main.player[playerID].name + " has invited you to play " + gameName + ". " + GameInviteTagHandler.GenerateTag(true, playerID, gameName) + GameInviteTagHandler.GenerateTag(false, playerID, gameName));
+			Main.NewText(Main.player[playerID].name + " has invited you to play " + gameName + ". " + GameInviteTagHandler.GenerateTag(true, playerID, gameName, settings) + GameInviteTagHandler.GenerateTag(false, playerID, gameName));
 		}
 		public static async Task<CSteamID> GetSteamID(int playerID) {
 			if (BoardGamesPlayer.SteamIDs[playerID].HasValue) {

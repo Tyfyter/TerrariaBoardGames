@@ -27,6 +27,7 @@ namespace BoardGames.UI {
 		List<(string name, Action<GameUI> AI)> AIs;
 		int AICount;
 		int MaxScroll => totalPlayers + AICount - 4;
+		internal GameSelectorMenu lastMenuState;
 		public override void OnActivate() {
 			SoundEngine.PlaySound(SoundID.MenuOpen);
 			Main.playerInventory = false;
@@ -89,7 +90,7 @@ namespace BoardGames.UI {
 						BoardGames.Instance.Game.customAI = AIs[index].AI;
 						return;
 					}
-					BoardGames.SendGameRequest(players[i], selectedGame);
+					BoardGames.SendGameRequest(players[i], selectedGame, lastMenuState?.currentSettings?.Serialize());
 					Main.NewText($"Sent invitation to {Main.player[players[i]].name}");
 					BoardGames.Instance.Menu = null;
 					BoardGames.Instance.UI.SetState(null);
@@ -103,7 +104,11 @@ namespace BoardGames.UI {
 			}
 			buttonRect.X += (dimensions.Width / 2);
 			if (buttonRect.Contains(Main.mouseX, Main.mouseY)) {
-				BoardGames.OpenGameSelector();
+				if (lastMenuState is null) {
+					BoardGames.OpenGameSelector();
+				} else {
+					BoardGames.OpenMenu(lastMenuState);
+				}
 			}
 		}
 		public override void ScrollWheel(UIScrollWheelEvent evt) {

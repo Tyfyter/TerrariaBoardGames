@@ -68,7 +68,11 @@ namespace BoardGames {
 					}
 				}
 				if (otherID != -1) {
-					BoardGames.SendGameRequest(otherID, game);
+					string settings = "";
+					if (args.Length > 2) {
+						settings = args[2].ToLower();
+					}
+					BoardGames.SendGameRequest(otherID, game, settings);
 					Main.NewText($"Sent invitation to {Main.player[otherID].name}");
 				} else {
 					Main.NewText($"Could not find player \"{mode}\"");

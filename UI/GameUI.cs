@@ -57,12 +57,12 @@ namespace BoardGames.UI {
 			Init(scale, basePosition, slotSize);
 		}
 
-		public void SetMode(GameMode gameMode, int otherPlayer) {
+		public void SetMode(GameMode gameMode, int otherPlayer, bool? senderFirst) {
 			this.gameMode = gameMode;
 			if (gameMode == ONLINE) {
 				gameInactive = true;
 				otherPlayerId = otherPlayer;
-				SyncGame(otherPlayerId);
+				SyncGame(otherPlayerId, senderFirst);
 			}
 		}
 
@@ -117,17 +117,24 @@ namespace BoardGames.UI {
 			return gameInactive ? new Color(128, 128, 128, 128) : (glowing ? Color.White : Color.LightGray);
 		}
 		public virtual void SetupGame() { }
-		public static void SyncGame(int other) {
+		public static void SyncGame(int other, bool? senderFirst) {
 			int seed = Main.rand.Next(int.MinValue, int.MaxValue);
 			ModPacket packet = BoardGames.Instance.GetPacket(9);
 			packet.Write(PacketType.StartupSync);
 			packet.Write(seed);
+			if (senderFirst.HasValue) {
+				packet.Write(true);
+				packet.Write(senderFirst.Value);
+			} else {
+				packet.Write(false);
+			}
 			packet.Write(other);
 			packet.Send();
 			rand = new UnifiedRandom(seed);
 			BoardGames.Instance.Game.owner = (other < Main.myPlayer) == rand.NextBool() ? 1 : 0;
 			//Game.gameInactive = false;
 		}
+		public virtual void SetGameSettings(GameSettings settings) { }
 	}
 	public enum GameMode {
 		AI,

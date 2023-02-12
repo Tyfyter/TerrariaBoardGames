@@ -16,11 +16,13 @@ namespace BoardGames.UI {
 			bool accept;
 			int sender;
 			string game;
+			string settings;
 			DateTime timestamp;
-			public GameInviteSnippet(bool accept, int sender, string game) : base(accept ? "✓" : "✗", accept ? Color.Green : Color.Red) {
+			public GameInviteSnippet(bool accept, int sender, string game, string settings = null) : base(accept ? "✓" : "✗", accept ? Color.Green : Color.Red) {
 				this.accept = accept;
 				this.sender = sender;
 				this.game = game;
+				this.settings = settings ?? "";
 				CheckForHover = true;
 				timestamp = DateTime.Now;
 			}
@@ -38,6 +40,7 @@ namespace BoardGames.UI {
 					packet = BoardGames.Instance.GetPacket();
 					packet.Write(PacketType.AcceptRequest);
 					packet.Write(game);
+					packet.Write(settings);
 					packet.Write(sender);
 					packet.Send();
 				}
@@ -53,17 +56,25 @@ namespace BoardGames.UI {
 			}
 		}
 		public TextSnippet Parse(string text, Color baseColor, string options) {
-			string[] array = options.Split(',');
-			bool accept = array[0] == "a";
-			if (!int.TryParse(array[1], out int sender)) return null;
-			string game = text;
-			return new GameInviteSnippet(accept, sender, game) {
+			string[] optionsArray = options.Split(',');
+			bool accept = optionsArray[0] == "a";
+			if (!int.TryParse(optionsArray[1], out int sender)) return null;
+			string[] textArray = text.Split(',');
+			string game = textArray[0];
+			string settings = "";
+			if (textArray.Length > 1) {
+				settings = textArray[1];
+			}
+			return new GameInviteSnippet(accept, sender, game, settings) {
 				DeleteWhole = true
 			};
 		}
 
-		public static string GenerateTag(bool accept, int sender, string game) {
-			return $"[game/{(accept ? "a" : "d")},{sender}:{game}]";
+		public static string GenerateTag(bool accept, int sender, string game, string settings = null) {
+			if (settings is not null) {
+				settings = ',' + settings;
+			}
+			return $"[game/{(accept ? "a" : "d")},{sender}:{game}{settings}]";
 		}
 	}
 }

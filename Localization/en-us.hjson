@@ -3,6 +3,9 @@ Mods: {
 		Local: Local
 		GameSelector: Select Game
 		PlayerSelector: Select Opponent
+		GameSettings: Settings
+	}
+	BoardGames.BoardGame: {
 
 		Ur: {
 			Name: The royal game of Ur

@@ -12,19 +12,67 @@ using BoardGames.Textures.Chess;
 using static BoardGames.UI.GameMode;
 using BoardGames.Misc;
 using Terraria.ID;
+using ReLogic.Content;
+using Terraria.ModLoader.Config;
+using Newtonsoft.Json;
 
 namespace BoardGames.UI {
+	public class Chess : BoardGame {
+		public override void StartGame(GameMode gameMode = LOCAL, int otherPlayer = -1, GameSettings _settings = null) {
+			GameUI game = BoardGames.Instance.Game = new Chess_UI();
+			Chess_Settings settings = _settings as Chess_Settings;
+			game.SetGameSettings(settings);
+			game.SetMode(gameMode, otherPlayer, settings.SwitchPlayers ^ (otherPlayer > Main.myPlayer));
+			game.TryLoadTextures();
+			game.Activate();
+			BoardGames.Instance.UI.SetState(game);
+		}
+		public override GameSettings GetSettings() => new Chess_Settings();
+	}
+	public class Chess_Settings : GameSettings {
+		[Label("Random sides")]
+		public bool RandomSides {
+			get => !SwitchPlayers.HasValue;
+			set => SwitchPlayers = value ? null : true;
+		}
+		[Label("Sender plays white")]
+		public bool SenderWhite {
+			get => SwitchPlayers ?? false;
+			set => SwitchPlayers = value;
+		}
+		[JsonIgnore]
+		public bool? SwitchPlayers;
+		public override void Deserialize(string data) {
+			int bytes = int.Parse(data ?? "0", System.Globalization.NumberStyles.HexNumber);
+			if ((bytes & (1 << 0)) != 0) {
+				SwitchPlayers = (bytes & (1 << 1)) != 0;
+			}
+		}
+		public override string Serialize() {
+			int bytes = 0;
+			if (SwitchPlayers.HasValue) {
+				bytes |= 1 << 0;
+				if (SwitchPlayers.Value) bytes |= 1 << 1;
+			}
+			return bytes.ToString("x");
+		}
+	}
 	public class Chess_UI : GameUI {
 		public override void TryLoadTextures() => LoadTextures();
 		public static AutoCastingAsset<Texture2D>[] BoardTextures { get; private set; }
+		internal static bool TexturesLoaded { get; private set; }
+		Chess_Settings gameSettings;
 		public static void LoadTextures() {
+			if (TexturesLoaded) return;
 			BoardTextures = new AutoCastingAsset<Texture2D>[] {
 				ModContent.Request<Texture2D>("BoardGames/Textures/Chess/Tile_White"),
 				ModContent.Request<Texture2D>("BoardGames/Textures/Chess/Tile_Black")
 			};
+			TexturesLoaded = true;
 			BoardGames.UnloadTextures += UnloadTextures;
 		}
 		public static void UnloadTextures() {
+			TexturesLoaded = false;
 			BoardTextures = null;
 		}
 		protected override void Init(Vector3 scale, Vector2 basePosition, Vector2 slotSize) {
@@ -91,7 +139,7 @@ namespace BoardGames.UI {
 					if (gameMode == ONLINE) {
 						dir = (owner == 1) ^ piece.White ? 1 : -1;
 					} else {
-						dir = piece.White ? 1 : -1;
+						dir = (piece.White == gameSettings.SenderWhite) ? 1 : -1;
 					}
 					moves = piece.GetMoves(slot, dir);
 					if (moves.Contains(target)) {
@@ -167,7 +215,7 @@ namespace BoardGames.UI {
 				if (gameMode == ONLINE) {
 					moves = piece.GetMoves(slot, (owner == 1) ^ piece.White ? 1 : -1);
 				} else {
-					moves = piece.GetMoves(slot, piece.White ? 1 : -1);
+					moves = piece.GetMoves(slot, (piece.White == gameSettings.SenderWhite) ? 1 : -1);
 				}
 				for (int i = moves.Length; i-- > 0;) {
 					gamePieces.Index(moves[i]).glowing = true;
@@ -178,6 +226,9 @@ namespace BoardGames.UI {
 			return gameInactive ? new Color(128, 128, 128, 128) : (glowing ? Color.White : new Color(175, 165, 165));
 		}
 		public override void SetupGame() {
+			if (!gameSettings.SenderWhite) {
+				owner ^= 1;
+			}
 			char[,] pieces = new char[8, 8] {
 				{'r','n','b','q','k','b','n','r'},
 				{'p','p','p','p','p','p','p','p'},
@@ -220,6 +271,15 @@ namespace BoardGames.UI {
 						gamePieces[i, j].SetItem(Chess_Piece.Pieces[type]);
 					}
 				}
+			}
+			if (!gameSettings.SenderWhite) {
+				owner ^= 1;
+			}
+		}
+		public override void SetGameSettings(GameSettings settings) {
+			gameSettings = (settings as Chess_Settings) ?? new();
+			if (gameSettings.RandomSides && gameMode != ONLINE) {
+				gameSettings.SenderWhite = Main.rand.NextBool();
 			}
 		}
 	}
