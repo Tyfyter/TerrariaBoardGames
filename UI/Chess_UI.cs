@@ -211,7 +211,7 @@ namespace BoardGames.UI {
 			GamePieceItemSlot slot = gamePieces.Index(selectedPiece.Value);
 			Chess_Piece piece = slot?.item?.ModItem as Chess_Piece;
 			if (!(piece is null)) {
-				Point[] moves = new Point[0];
+				/*Point[] moves = new Point[0];
 				if (gameMode == ONLINE) {
 					moves = piece.GetMoves(slot, (owner == 1) ^ piece.White ? 1 : -1);
 				} else {
@@ -219,6 +219,11 @@ namespace BoardGames.UI {
 				}
 				for (int i = moves.Length; i-- > 0;) {
 					gamePieces.Index(moves[i]).glowing = true;
+				}*/
+				ChessMove[] moves = Array.Empty<ChessMove>();
+
+				for (int i = moves.Length; i-- > 0;) {
+					gamePieces.Index(moves[i].GetEndPos(owner)).glowing = true;
 				}
 			}
 		}

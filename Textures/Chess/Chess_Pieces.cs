@@ -12,6 +12,7 @@ using BoardGames.UI;
 using System.Text.RegularExpressions;
 using BoardGames.Misc;
 using Microsoft.Xna.Framework.Graphics;
+using System.IO;
 
 namespace BoardGames.Textures.Chess {
     [Autoload(false)]
@@ -527,5 +528,67 @@ namespace BoardGames.Textures.Chess {
                 return moves.ToArray();
             }
         }
-    }
+	}
+	public class ChessMoveRegistry : ILoadable {
+		readonly List<ChessMoveProvider> moveProviders;
+		public static List<ChessMoveProvider> MoveProviders => Instance.moveProviders;
+		public static ChessMoveRegistry Instance { get; private set; }
+		[Obsolete("Should only be called by the loading process", true)]
+		public ChessMoveRegistry() {
+			Instance = this;
+			moveProviders = new();
+		}
+		public void Load(Mod mod) { }
+		public void Unload() {
+			Instance = null;
+		}
+		public static int Add(ChessMoveProvider moveProvider) {
+			MoveProviders.Add(moveProvider);
+			return MoveProviders.Count - 1;
+		}
+
+	}
+	public abstract class ChessMoveProvider : ModType {
+	}
+	public struct ChessMove {
+		internal int providerType;
+		internal byte owner;
+		internal byte startX;
+		internal byte startY;
+		internal byte endX;
+		internal byte endY;
+		internal int identifier;
+		public ChessMove(int providerType, byte owner, byte startX, byte startY, byte endX, byte endY, int identifier = 0) {
+			this.providerType = providerType;
+			this.owner = owner;
+			this.startX = startX;
+			this.startY = startY;
+			this.endX = endX;
+			this.endY = endY;
+			this.identifier = identifier;
+		}
+		public Point GetEndPos(int boardOwner, byte boardWidth = 8, byte boardHeight = 8) {
+			return boardOwner == owner ? new Point(endX, endY) : new Point((boardWidth - 1) - endX, (boardHeight - 1) - endY);
+		}
+		public void SendData(BinaryWriter writer) {
+			writer.Write(providerType);
+			writer.Write(owner);
+			writer.Write(startX);
+			writer.Write(startY);
+			writer.Write(endX);
+			writer.Write(endY);
+			writer.Write(identifier);
+		}
+		public static ChessMove ReceiveData(BinaryReader reader) {
+			return new ChessMove(
+				providerType: reader.ReadInt32(),
+				owner:		  reader.ReadByte(),
+				startX:		  reader.ReadByte(),
+				startY:		  reader.ReadByte(),
+				endX:		  reader.ReadByte(),
+				endY:		  reader.ReadByte(),
+				identifier:   reader.ReadInt32()
+			);
+		}
+	}
 }
